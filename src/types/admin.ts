@@ -136,6 +136,8 @@ export interface AdminEpisode {
   episodeNumber?: number;
   createdAt?: string;
   updatedAt?: string;
+  story?: { id: string; title: string };
+  comments?: StoryCommentDetail[];
 }
 
 export interface AdminChapter {
@@ -147,16 +149,34 @@ export interface AdminChapter {
   chapterNumber?: number;
   createdAt?: string;
   updatedAt?: string;
+  story?: { id: string; title: string };
+  comments?: StoryCommentDetail[];
 }
+
+export type AdminCommentType = "story" | "episode" | "chapter";
 
 export interface AdminComment {
   id: string;
   content: string;
-  type?: "story" | "episode" | "chapter";
+  type?: AdminCommentType;
   createdAt?: string;
+  updatedAt?: string;
   storyTitle?: string;
-  user?: { penName?: string; email?: string };
+  storyId?: string;
+  episodeId?: string;
+  episodeTitle?: string;
+  chapterId?: string;
+  chapterTitle?: string;
+  userId?: string;
+  user?: {
+    id?: string;
+    penName?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+  };
   story?: { id: string; title: string };
+  replies?: AdminComment[];
 }
 
 export interface ReportsOverview {

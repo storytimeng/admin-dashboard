@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   AdminComment,
+  AdminCommentType,
   AdminEpisode,
   AdminChapter,
   AdminLoginResponse,
@@ -132,6 +133,17 @@ export const adminApi = {
   getEpisodes: () =>
     apiRequest<{ episodes: AdminEpisode[]; count: number }>("admin/episodes"),
 
+  getEpisode: (id: string) => apiRequest<AdminEpisode>(`admin/episodes/${id}`),
+
+  updateEpisode: (
+    id: string,
+    data: Partial<Pick<AdminEpisode, "title" | "content" | "episodeNumber">>,
+  ) =>
+    apiRequest<AdminEpisode>(`admin/episodes/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
   deleteEpisode: (id: string) =>
     apiRequest<{ message: string }>(`admin/episodes/${id}`, {
       method: "DELETE",
@@ -140,16 +152,57 @@ export const adminApi = {
   getChapters: () =>
     apiRequest<{ chapters: AdminChapter[]; count: number }>("admin/chapters"),
 
+  getChapter: (id: string) => apiRequest<AdminChapter>(`admin/chapters/${id}`),
+
+  updateChapter: (
+    id: string,
+    data: Partial<Pick<AdminChapter, "title" | "content" | "chapterNumber">>,
+  ) =>
+    apiRequest<AdminChapter>(`admin/chapters/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
   deleteChapter: (id: string) =>
     apiRequest<{ message: string }>(`admin/chapters/${id}`, {
       method: "DELETE",
     }),
 
-  getComments: (type?: "story" | "episode" | "chapter") => {
+  getComments: (type?: AdminCommentType) => {
     const qs = type ? `?type=${type}` : "";
     return apiRequest<{ comments: AdminComment[]; count: number }>(
       `admin/comments${qs}`,
     );
+  },
+
+  getComment: (type: AdminCommentType, id: string) =>
+    apiRequest<AdminComment>(`admin/comments/${type}/${id}`),
+
+  updateComment: (
+    type: AdminCommentType,
+    id: string,
+    data: { content: string },
+  ) =>
+    apiRequest<AdminComment>(`admin/comments/${type}/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteComment: (type: AdminCommentType, id: string) => {
+    switch (type) {
+      case "episode":
+        return apiRequest<{ message: string }>(`admin/comments/episode/${id}`, {
+          method: "DELETE",
+        });
+      case "chapter":
+        return apiRequest<{ message: string }>(`admin/comments/chapter/${id}`, {
+          method: "DELETE",
+        });
+      default:
+        return apiRequest<{ message: string }>(`admin/comments/story/${id}`, {
+          method: "DELETE",
+        });
+    }
   },
 
   deleteStoryComment: (id: string) =>
