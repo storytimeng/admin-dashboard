@@ -63,7 +63,7 @@ export function StoryEditDialog({
   useEffect(() => {
     if (!open) return;
     adminApi
-      .getGenres()
+      .getAvailableGenres()
       .then(setAvailableGenres)
       .catch(() => toast.error("Could not load genres"));
   }, [open]);

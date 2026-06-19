@@ -26,6 +26,16 @@ import type {
   TermsItem,
 } from "@/types/admin";
 
+type GenresListPayload = string[] | { genres?: string[] };
+
+function normalizeGenreNames(
+  payload: GenresListPayload | null | undefined,
+): string[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  return payload.genres ?? [];
+}
+
 export const adminApi = {
   login: (email: string, password: string) =>
     apiRequest<AdminLoginResponse>("admin/login", {
@@ -356,8 +366,25 @@ export const adminApi = {
     }),
 
   getGenres: async () => {
-    const res = await apiRequest<{ genres: string[] }>("stories/genres");
-    return res.genres ?? [];
+    const res = await apiRequest<GenresListPayload>("stories/genres");
+    return normalizeGenreNames(res);
+  },
+
+  getAvailableGenres: async () => {
+    try {
+      const adminRes = await apiRequest<{
+        genres?: GenreAdminItem[];
+      }>("admin/genres");
+      const fromAdmin = (adminRes.genres ?? [])
+        .filter((genre) => genre.isActive)
+        .map((genre) => genre.name);
+      if (fromAdmin.length > 0) return fromAdmin;
+    } catch {
+      // Fall back to public endpoint when admin route is unavailable.
+    }
+
+    const res = await apiRequest<GenresListPayload>("stories/genres");
+    return normalizeGenreNames(res);
   },
 
   getAdminGenres: () =>
