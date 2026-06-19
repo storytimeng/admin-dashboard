@@ -480,6 +480,20 @@ export interface SubscriptionRecord {
   startsAt?: string;
   expiresAt?: string;
   createdAt?: string;
+  autoRenew?: boolean;
+  cardLast4?: string | null;
+  hasPaymentMethod?: boolean;
+}
+
+export interface SubscriptionPlanOption {
+  id: string;
+  code: string;
+  name: string;
+  durationDays: number;
+  amount: number;
+  currency: string;
+  formattedPrice: string;
+  isPopular: boolean;
 }
 
 export interface FaqItem {

@@ -23,6 +23,7 @@ import type {
   StoryCommentDetail,
   StoryEpisodeDetail,
   SubscriptionOverview,
+  SubscriptionPlanOption,
   SubscriptionRecord,
   SupportItem,
   TermsItem,
@@ -296,7 +297,7 @@ export const adminApi = {
   getSubscriptionOverview: () =>
     apiRequest<SubscriptionOverview>("admin/subscriptions/overview"),
 
-  getPayments: (params?: {
+  getPayments: async (params?: {
     page?: number;
     limit?: number;
     status?: string;
@@ -308,28 +309,77 @@ export const adminApi = {
     if (params?.status) search.set("status", params.status);
     if (params?.userId) search.set("userId", params.userId);
     const qs = search.toString();
-    return apiRequest<{
-      payments: PaymentRecord[];
+    const response = await apiRequest<{
+      items: PaymentRecord[];
       total: number;
       page: number;
       limit: number;
       totalPages: number;
     }>(`admin/subscriptions/payments${qs ? `?${qs}` : ""}`);
+    return {
+      payments: response.items,
+      total: response.total,
+      page: response.page,
+      limit: response.limit,
+      totalPages: response.totalPages,
+    };
   },
 
-  getSubscriptionRecords: (params?: { page?: number; limit?: number }) => {
+  getSubscriptionRecords: async (params?: {
+    page?: number;
+    limit?: number;
+  }) => {
     const search = new URLSearchParams();
     if (params?.page) search.set("page", String(params.page));
     if (params?.limit) search.set("limit", String(params.limit));
     const qs = search.toString();
-    return apiRequest<{
-      subscriptions: SubscriptionRecord[];
+    const response = await apiRequest<{
+      items: SubscriptionRecord[];
       total: number;
       page: number;
       limit: number;
       totalPages: number;
     }>(`admin/subscriptions/records${qs ? `?${qs}` : ""}`);
+    return {
+      subscriptions: response.items,
+      total: response.total,
+      page: response.page,
+      limit: response.limit,
+      totalPages: response.totalPages,
+    };
   },
+
+  getSubscriptionPlans: () =>
+    apiRequest<{ plans: SubscriptionPlanOption[]; currency: string }>(
+      "admin/subscriptions/plans",
+    ),
+
+  cancelUserSubscription: (subscriptionId: string) =>
+    apiRequest<{ cancelled: boolean; message: string; expiresAt?: string }>(
+      `admin/subscriptions/records/${subscriptionId}/cancel`,
+      { method: "POST" },
+    ),
+
+  reactivateUserSubscription: (subscriptionId: string) =>
+    apiRequest<{ reactivated: boolean; message: string; expiresAt?: string }>(
+      `admin/subscriptions/records/${subscriptionId}/reactivate`,
+      { method: "POST" },
+    ),
+
+  upgradeUserSubscription: (subscriptionId: string, planCode: string) =>
+    apiRequest<{
+      upgraded: boolean;
+      requiresPayment: boolean;
+      message: string;
+      authorizationUrl?: string;
+      reference?: string;
+      planCode?: string;
+      planName?: string;
+      expiresAt?: string;
+    }>(`admin/subscriptions/records/${subscriptionId}/upgrade`, {
+      method: "POST",
+      body: { planCode },
+    }),
 
   getSubscriptionAuditLogs: (params?: { page?: number; limit?: number }) => {
     const search = new URLSearchParams();
