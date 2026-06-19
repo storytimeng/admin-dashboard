@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+import useSWR from "swr";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { adminApi } from "@/lib/api/admin";
+import type { FaqItem } from "@/types/admin";
+
+function ContentCrudPage({
+  title,
+  description,
+  fetchKey,
+  fetchFn,
+  createFn,
+  updateFn,
+  deleteFn,
+}: {
+  title: string;
+  description: string;
+  fetchKey: string;
+  fetchFn: () => Promise<FaqItem[]>;
+  createFn: (data: Partial<FaqItem>) => Promise<FaqItem>;
+  updateFn: (id: string, data: Partial<FaqItem>) => Promise<FaqItem>;
+  deleteFn: (id: string) => Promise<unknown>;
+}) {
+  const { data, isLoading, mutate } = useSWR(fetchKey, fetchFn);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<FaqItem | null>(null);
+  const [form, setForm] = useState({ question: "", answer: "" });
+  const [saving, setSaving] = useState(false);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ question: "", answer: "" });
+    setOpen(true);
+  };
+
+  const openEdit = (item: FaqItem) => {
+    setEditing(item);
+    setForm({
+      question: item.question || (item as { title?: string }).title || "",
+      answer: item.answer || (item as { content?: string }).content || "",
+    });
+    setOpen(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        question: form.question,
+        answer: form.answer,
+        title: form.question,
+        content: form.answer,
+      };
+      if (editing) await updateFn(editing.id, payload);
+      else await createFn(payload);
+      toast.success(editing ? "Updated" : "Created");
+      setOpen(false);
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={title}
+        description={description}
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 size-4" />
+            Add new
+          </Button>
+        }
+      />
+      <div className="rounded-xl border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title / Question</TableHead>
+              <TableHead className="w-40" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <Skeleton className="h-8 w-full" />
+                </TableCell>
+              </TableRow>
+            ) : (
+              data?.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium max-w-lg truncate">
+                    {item.question || (item as { title?: string }).title || "—"}
+                  </TableCell>
+                  <TableCell className="space-x-2 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(item)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={async () => {
+                        try {
+                          await deleteFn(item.id);
+                          toast.success("Deleted");
+                          await mutate();
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : "Failed",
+                          );
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit" : "Create"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Title / Question</Label>
+              <Input
+                value={form.question}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, question: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Content / Answer</Label>
+              <Textarea
+                rows={6}
+                value={form.answer}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, answer: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default function FaqsPage() {
+  return (
+    <ContentCrudPage
+      title="FAQs"
+      description="Manage frequently asked questions shown in the app."
+      fetchKey="faqs"
+      fetchFn={() => adminApi.getFaqs()}
+      createFn={(d) => adminApi.createFaq(d)}
+      updateFn={(id, d) => adminApi.updateFaq(id, d)}
+      deleteFn={(id) => adminApi.deleteFaq(id)}
+    />
+  );
+}

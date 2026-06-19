@@ -1,0 +1,277 @@
+import { apiRequest } from "./client";
+import type {
+  AdminComment,
+  AdminEpisode,
+  AdminChapter,
+  AdminLoginResponse,
+  AdminStory,
+  AdminUser,
+  AppUser,
+  EmailTemplate,
+  FaqItem,
+  PaymentRecord,
+  ReportsOverview,
+  SubscriptionOverview,
+  SubscriptionRecord,
+  SupportItem,
+  TermsItem,
+} from "@/types/admin";
+
+export const adminApi = {
+  login: (email: string, password: string) =>
+    apiRequest<AdminLoginResponse>("admin/login", {
+      method: "POST",
+      body: { email, password },
+      auth: false,
+    }),
+
+  logout: () =>
+    apiRequest<{ message: string }>("auth/logout", { method: "POST" }),
+
+  getProfile: () => apiRequest<AdminUser>("admin/profile"),
+
+  getReportsOverview: () =>
+    apiRequest<{ report: ReportsOverview }>("admin/reports/overview"),
+
+  getUsers: () =>
+    apiRequest<{ message: string; count: number; users: AppUser[] }>(
+      "admin/users",
+    ),
+
+  suspendUser: (id: string) =>
+    apiRequest<{ message: string }>(`admin/users/${id}/suspend`, {
+      method: "PATCH",
+    }),
+
+  unsuspendUser: (id: string) =>
+    apiRequest<{ message: string }>(`admin/users/${id}/unsuspend`, {
+      method: "PATCH",
+    }),
+
+  deleteUser: (id: string) =>
+    apiRequest<{ message: string }>(`admin/users/${id}`, { method: "DELETE" }),
+
+  getStories: (params?: {
+    page?: number;
+    limit?: number;
+    genres?: string[];
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    params?.genres?.forEach((g) => search.append("genres", g));
+    const qs = search.toString();
+    return apiRequest<{
+      stories: AdminStory[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`admin/stories${qs ? `?${qs}` : ""}`);
+  },
+
+  updateStory: (id: string, data: Partial<AdminStory>) =>
+    apiRequest<AdminStory>(`admin/stories/${id}`, {
+      method: "PATCH",
+      body: data,
+    }),
+
+  suspendStory: (id: string) =>
+    apiRequest<{ message: string }>(`admin/stories/${id}/suspend`, {
+      method: "PATCH",
+    }),
+
+  unsuspendStory: (id: string) =>
+    apiRequest<{ message: string }>(`admin/stories/${id}/unsuspend`, {
+      method: "PATCH",
+    }),
+
+  deleteStory: (id: string) =>
+    apiRequest<{ message: string }>(`admin/stories/${id}`, {
+      method: "DELETE",
+    }),
+
+  getEpisodes: () =>
+    apiRequest<{ episodes: AdminEpisode[]; count: number }>("admin/episodes"),
+
+  deleteEpisode: (id: string) =>
+    apiRequest<{ message: string }>(`admin/episodes/${id}`, {
+      method: "DELETE",
+    }),
+
+  getChapters: () =>
+    apiRequest<{ chapters: AdminChapter[]; count: number }>("admin/chapters"),
+
+  deleteChapter: (id: string) =>
+    apiRequest<{ message: string }>(`admin/chapters/${id}`, {
+      method: "DELETE",
+    }),
+
+  getComments: (type?: "story" | "episode" | "chapter") => {
+    const qs = type ? `?type=${type}` : "";
+    return apiRequest<{ comments: AdminComment[]; count: number }>(
+      `admin/comments${qs}`,
+    );
+  },
+
+  deleteStoryComment: (id: string) =>
+    apiRequest<{ message: string }>(`admin/comments/story/${id}`, {
+      method: "DELETE",
+    }),
+
+  deleteEpisodeComment: (id: string) =>
+    apiRequest<{ message: string }>(`admin/comments/episode/${id}`, {
+      method: "DELETE",
+    }),
+
+  deleteChapterComment: (id: string) =>
+    apiRequest<{ message: string }>(`admin/comments/chapter/${id}`, {
+      method: "DELETE",
+    }),
+
+  getAdmins: () => apiRequest<AdminUser[]>("admin"),
+
+  createAdmin: (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    role: string;
+  }) => apiRequest<AdminUser>("admin", { method: "POST", body: data }),
+
+  updateAdmin: (id: string, data: Partial<AdminUser>) =>
+    apiRequest<AdminUser>(`admin/${id}`, { method: "PATCH", body: data }),
+
+  suspendAdmin: (id: string) =>
+    apiRequest<{ message: string }>(`admin/${id}/suspend`, { method: "PATCH" }),
+
+  unsuspendAdmin: (id: string) =>
+    apiRequest<{ message: string }>(`admin/${id}/unsuspend`, {
+      method: "PATCH",
+    }),
+
+  deleteAdmin: (id: string) =>
+    apiRequest<{ message: string }>(`admin/${id}`, { method: "DELETE" }),
+
+  sendNotification: (data: {
+    title: string;
+    message: string;
+    type: string;
+    userId?: string;
+    email?: string;
+    sendEmail?: boolean;
+  }) =>
+    apiRequest<{ message: string }>("admin/notifications", {
+      method: "POST",
+      body: data,
+    }),
+
+  sendBulkNotification: (data: {
+    title: string;
+    message: string;
+    type: string;
+    emails?: string[];
+    userIds?: string[];
+    sendEmail?: boolean;
+  }) =>
+    apiRequest<{
+      message: string;
+      created: number;
+      failed: number;
+      externalEmailsSent?: number;
+    }>("admin/notifications/bulk", { method: "POST", body: data }),
+
+  getSubscriptionOverview: () =>
+    apiRequest<SubscriptionOverview>("admin/subscriptions/overview"),
+
+  getPayments: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    userId?: string;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.status) search.set("status", params.status);
+    if (params?.userId) search.set("userId", params.userId);
+    const qs = search.toString();
+    return apiRequest<{
+      payments: PaymentRecord[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`admin/subscriptions/payments${qs ? `?${qs}` : ""}`);
+  },
+
+  getSubscriptionRecords: (params?: { page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    const qs = search.toString();
+    return apiRequest<{
+      subscriptions: SubscriptionRecord[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`admin/subscriptions/records${qs ? `?${qs}` : ""}`);
+  },
+
+  getEmailTemplates: () => apiRequest<EmailTemplate[]>("admin/email-templates"),
+
+  getEmailTemplate: (slug: string) =>
+    apiRequest<EmailTemplate>(`admin/email-templates/${slug}`),
+
+  updateEmailTemplate: (
+    slug: string,
+    data: Partial<
+      Pick<EmailTemplate, "subject" | "bodyHtml" | "bodyText" | "isActive">
+    >,
+  ) =>
+    apiRequest<EmailTemplate>(`admin/email-templates/${slug}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  getFaqs: () => apiRequest<FaqItem[]>("faqs/admin/all"),
+
+  createFaq: (data: Partial<FaqItem>) =>
+    apiRequest<FaqItem>("faqs", { method: "POST", body: data }),
+
+  updateFaq: (id: string, data: Partial<FaqItem>) =>
+    apiRequest<FaqItem>(`faqs/${id}`, { method: "PUT", body: data }),
+
+  deleteFaq: (id: string) =>
+    apiRequest<{ message: string }>(`faqs/${id}`, { method: "DELETE" }),
+
+  getSupport: () => apiRequest<SupportItem[]>("support/admin/all"),
+
+  createSupport: (data: Partial<SupportItem>) =>
+    apiRequest<SupportItem>("support", { method: "POST", body: data }),
+
+  updateSupport: (id: string, data: Partial<SupportItem>) =>
+    apiRequest<SupportItem>(`support/${id}`, { method: "PUT", body: data }),
+
+  deleteSupport: (id: string) =>
+    apiRequest<{ message: string }>(`support/${id}`, { method: "DELETE" }),
+
+  getTerms: () => apiRequest<TermsItem[]>("terms-and-policy/admin/all"),
+
+  createTerms: (data: Partial<TermsItem>) =>
+    apiRequest<TermsItem>("terms-and-policy", { method: "POST", body: data }),
+
+  updateTerms: (id: string, data: Partial<TermsItem>) =>
+    apiRequest<TermsItem>(`terms-and-policy/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  deleteTerms: (id: string) =>
+    apiRequest<{ message: string }>(`terms-and-policy/${id}`, {
+      method: "DELETE",
+    }),
+
+  getGenres: () => apiRequest<string[]>("stories/genres"),
+};

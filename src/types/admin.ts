@@ -1,0 +1,197 @@
+export type AdminRole =
+  | "super_admin"
+  | "admin"
+  | "marketing"
+  | "developer"
+  | "designer"
+  | "finance";
+
+export interface AdminUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: AdminRole;
+  isSuspended: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminLoginResponse {
+  message: string;
+  access_token: string;
+  admin: AdminUser;
+}
+
+export interface AppUser {
+  id: string;
+  email: string;
+  penName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: string | null;
+  isSuspended?: boolean;
+  isEmailVerified?: boolean;
+  deletedAt?: string | null;
+  lastActiveAt?: string | null;
+  createdAt?: string;
+  genres?: string[] | null;
+  badges?: string[] | null;
+  certificates?: string[] | null;
+}
+
+export interface AdminStory {
+  id: string;
+  title: string;
+  description?: string | null;
+  content?: string | null;
+  storyStatus?: string | null;
+  genres?: string[] | null;
+  imageUrl?: string | null;
+  anonymous?: boolean;
+  onlyOnStorytime?: boolean;
+  isSuspended?: boolean;
+  likeCount?: number;
+  commentCount?: number;
+  viewCount?: number;
+  author?: {
+    id?: string;
+    penName?: string | null;
+    email?: string | null;
+  } | null;
+  authorId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminEpisode {
+  id: string;
+  title: string;
+  content?: string | null;
+  storyId?: string;
+  storyTitle?: string;
+  episodeNumber?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminChapter {
+  id: string;
+  title: string;
+  content?: string | null;
+  storyId?: string;
+  storyTitle?: string;
+  chapterNumber?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminComment {
+  id: string;
+  content: string;
+  type?: "story" | "episode" | "chapter";
+  createdAt?: string;
+  user?: { penName?: string; email?: string };
+  story?: { id: string; title: string };
+}
+
+export interface ReportsOverview {
+  users: {
+    total: number;
+    active: number;
+    suspended: number;
+    deleted: number;
+  };
+  stories: {
+    total: number;
+    suspended: number;
+    active: number;
+  };
+  content: {
+    episodes: number;
+    chapters: number;
+  };
+  comments: {
+    total: number;
+    story: number;
+    episode: number;
+    chapter: number;
+  };
+  generatedAt: string;
+}
+
+export interface SubscriptionOverview {
+  totalPayments: number;
+  successfulPayments: number;
+  pendingPayments: number;
+  activeSubscriptions: number;
+  premiumUsers: number;
+  revenueByCurrency: Array<{
+    currency: string;
+    totalMinor: number;
+    formatted: string;
+  }>;
+}
+
+export interface PaymentRecord {
+  id: string;
+  reference: string;
+  status: string;
+  amount: number;
+  currency: string;
+  formattedAmount: string;
+  channel?: string;
+  paidAt?: string | null;
+  userId?: string;
+  userEmail?: string;
+  planCode?: string;
+  planName?: string;
+}
+
+export interface SubscriptionRecord {
+  id: string;
+  userId: string;
+  userEmail?: string;
+  planCode?: string;
+  planName?: string;
+  status: string;
+  currency?: string;
+  amountPaid?: number;
+  startsAt?: string;
+  expiresAt?: string;
+  createdAt?: string;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface SupportItem {
+  id: string;
+  title: string;
+  content: string;
+  order?: number;
+  isActive?: boolean;
+}
+
+export interface TermsItem {
+  id: string;
+  title: string;
+  content: string;
+  type?: string;
+  isActive?: boolean;
+}
+
+export interface EmailTemplate {
+  slug: string;
+  name?: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText?: string;
+  isActive?: boolean;
+}
