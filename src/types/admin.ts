@@ -373,6 +373,17 @@ export interface SupportItem {
   updatedAt?: string;
 }
 
+export interface GenreAdminItem {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  storyCount: number;
+  userCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type PolicyType = "terms" | "privacy";
 export type LegacyPolicyType = "cookie" | "other";
 export type TermsFormType = PolicyType | LegacyPolicyType;

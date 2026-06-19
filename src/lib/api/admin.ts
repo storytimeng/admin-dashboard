@@ -12,6 +12,7 @@ import type {
   EmailTemplate,
   EmailTemplateSummary,
   FaqItem,
+  GenreAdminItem,
   DashboardAnalytics,
   PaymentAuditLog,
   PaymentRecord,
@@ -354,5 +355,43 @@ export const adminApi = {
       method: "DELETE",
     }),
 
-  getGenres: () => apiRequest<string[]>("stories/genres"),
+  getGenres: async () => {
+    const res = await apiRequest<{ genres: string[] }>("stories/genres");
+    return res.genres ?? [];
+  },
+
+  getAdminGenres: () =>
+    apiRequest<{
+      message: string;
+      genres: GenreAdminItem[];
+      count: number;
+    }>("admin/genres"),
+
+  createGenre: (data: {
+    name: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) =>
+    apiRequest<{ message: string; genre: GenreAdminItem }>("admin/genres", {
+      method: "POST",
+      body: data,
+    }),
+
+  updateGenre: (
+    id: string,
+    data: Partial<{
+      name: string;
+      sortOrder: number;
+      isActive: boolean;
+    }>,
+  ) =>
+    apiRequest<{ message: string; genre: GenreAdminItem }>(
+      `admin/genres/${id}`,
+      { method: "PATCH", body: data },
+    ),
+
+  deleteGenre: (id: string) =>
+    apiRequest<{ message: string }>(`admin/genres/${id}`, {
+      method: "DELETE",
+    }),
 };
