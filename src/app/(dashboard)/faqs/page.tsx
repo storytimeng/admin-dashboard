@@ -62,8 +62,8 @@ function ContentCrudPage({
   const openEdit = (item: FaqItem) => {
     setEditing(item);
     setForm({
-      question: item.question || (item as { title?: string }).title || "",
-      answer: item.answer || (item as { content?: string }).content || "",
+      question: item.question,
+      answer: item.answer,
     });
     setOpen(true);
   };
@@ -71,11 +71,9 @@ function ContentCrudPage({
   const save = async () => {
     setSaving(true);
     try {
-      const payload = {
+      const payload: Pick<FaqItem, "question" | "answer"> = {
         question: form.question,
         answer: form.answer,
-        title: form.question,
-        content: form.answer,
       };
       if (editing) await updateFn(editing.id, payload);
       else await createFn(payload);
@@ -120,7 +118,7 @@ function ContentCrudPage({
               data?.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium max-w-lg truncate">
-                    {item.question || (item as { title?: string }).title || "—"}
+                    {item.question || "—"}
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
                     <Button
