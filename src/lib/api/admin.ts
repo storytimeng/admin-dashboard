@@ -9,6 +9,7 @@ import type {
   AdminStoryDetail,
   AdminUser,
   AppUser,
+  AdminUserDetail,
   EmailDeliveryLog,
   EmailTemplate,
   EmailTemplateSummary,
@@ -65,6 +66,8 @@ export const adminApi = {
     apiRequest<{ message: string; count: number; users: AppUser[] }>(
       "admin/users",
     ),
+
+  getUser: (id: string) => apiRequest<AdminUserDetail>(`admin/users/${id}`),
 
   suspendUser: (id: string) =>
     apiRequest<{ message: string }>(`admin/users/${id}/suspend`, {

@@ -24,6 +24,16 @@ export interface AdminLoginResponse {
   admin: AdminUser;
 }
 
+export interface AppUserStats {
+  storiesWritten: number;
+  episodesWritten: number;
+  chaptersWritten: number;
+  storiesRead: number;
+  likesReceived: number;
+  commentsReceived: number;
+  readsOnStories: number;
+}
+
 export interface AppUser {
   id: string;
   email: string;
@@ -32,6 +42,7 @@ export interface AppUser {
   lastName?: string | null;
   avatar?: string | null;
   isSuspended?: boolean;
+  isPremium?: boolean;
   isEmailVerified?: boolean;
   deletedAt?: string | null;
   lastActiveAt?: string | null;
@@ -39,6 +50,105 @@ export interface AppUser {
   genres?: string[] | null;
   badges?: string[] | null;
   certificates?: string[] | null;
+  badgesCount?: number;
+  certificatesCount?: number;
+  readerLevel?: string | null;
+  writerLevel?: string | null;
+  stats?: AppUserStats;
+}
+
+export interface AdminUserAchievement {
+  id: string;
+  milestone: number | null;
+  title: string;
+  imageUrl: string | null;
+}
+
+export interface AdminUserDetail {
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    penName?: string | null;
+    avatar?: string | null;
+    profilePicture?: string | null;
+    bio?: string | null;
+    genres?: string[];
+    dateOfBirth?: string;
+    timeToRead?: string | null;
+    timeToWrite?: string | null;
+    reminder?: string | null;
+    isEmailVerified?: boolean;
+    emailVerifiedAt?: string | null;
+    isSuspended?: boolean;
+    suspendedAt?: string | null;
+    deletedAt?: string | null;
+    isPremium?: boolean;
+    premiumExpiresAt?: string | null;
+    preferredCurrency?: string;
+    lastLoginAt?: string | null;
+    lastActiveAt?: string | null;
+    createdAt?: string;
+  };
+  reading: {
+    storiesRead: number;
+    nextReaderMilestone: number | null;
+    level: number;
+    levelTitle: string | null;
+    progress: {
+      totalStoriesInProgress: number;
+      completedStories: number;
+      totalReadingTimeSeconds: number;
+      totalReadingTimeMinutes: number;
+      totalReadingTimeHours: number;
+    };
+    recentHistory: Array<{
+      id: string;
+      readAt: string;
+      story: {
+        id: string;
+        title: string;
+        imageUrl?: string | null;
+        storyStatus?: string;
+        authorPenName?: string | null;
+      } | null;
+    }>;
+    totalHistory: number;
+  };
+  writing: {
+    storiesWritten: number;
+    draftsCount: number;
+    publishedStories: number;
+    episodesWritten: number;
+    chaptersWritten: number;
+    nextWriterMilestone: number | null;
+    level: number;
+    levelTitle: string | null;
+    recentStories: Array<{
+      id: string;
+      title: string;
+      storyStatus: string;
+      likeCount: number;
+      commentCount: number;
+      popularityScore: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+  engagement: {
+    likesReceived: number;
+    commentsReceived: number;
+    readsOnStories: number;
+  };
+  achievements: {
+    badges: AdminUserAchievement[];
+    certificates: AdminUserAchievement[];
+    badgesCount: number;
+    certificatesCount: number;
+    readerMilestones: number[];
+    authorMilestones: number[];
+  };
 }
 
 export interface AdminStory {
