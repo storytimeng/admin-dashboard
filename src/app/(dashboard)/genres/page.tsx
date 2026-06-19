@@ -7,6 +7,12 @@ import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +56,17 @@ export default function GenresPage() {
 
   const genres = data?.genres ?? [];
   const totalStories = genres.reduce((sum, g) => sum + g.storyCount, 0);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    total,
+    totalPages,
+    paginatedItems: paginatedGenres,
+    serialOffset,
+    handlePageSizeChange,
+  } = useClientPagination(genres);
 
   const openCreate = () => {
     setEditing(null);
@@ -169,97 +186,107 @@ export default function GenresPage() {
         </Alert>
       ) : null}
 
-      <div className="rounded-xl border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Genre</TableHead>
-              <TableHead className="text-right">Stories</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">
-                Users
-              </TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">Sort</TableHead>
-              <TableHead className="w-44 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <div className="space-y-4">
+        <div className="rounded-xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7}>
-                  <Skeleton className="h-8 w-full" />
-                </TableCell>
+                <SerialNumberHead />
+                <TableHead>Genre</TableHead>
+                <TableHead className="text-right">Stories</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">
+                  Users
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Sort</TableHead>
+                <TableHead className="w-44 text-right">Actions</TableHead>
               </TableRow>
-            ) : genres.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center text-muted-foreground py-10"
-                >
-                  No genres yet. Add your first genre to get started.
-                </TableCell>
-              </TableRow>
-            ) : (
-              genres.map((genre, index) => (
-                <TableRow key={genre.id}>
-                  <TableCell className="text-muted-foreground tabular-nums">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">{genre.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {genre.storyCount > 0 ? (
-                      <Link
-                        href={`/stories?genre=${encodeURIComponent(genre.name)}`}
-                        className="text-primary hover:underline"
-                      >
-                        {genre.storyCount}
-                      </Link>
-                    ) : (
-                      0
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums hidden sm:table-cell">
-                    {genre.userCount}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={genre.isActive ? "default" : "secondary"}>
-                      {genre.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell tabular-nums text-muted-foreground">
-                    {genre.sortOrder}
-                  </TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEdit(genre)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={genre.id.startsWith("legacy-")}
-                      onClick={() => {
-                        if (genre.storyCount > 0) {
-                          toast.error(
-                            `"${genre.name}" is used by ${genre.storyCount} ${genre.storyCount === 1 ? "story" : "stories"}. Deactivate it instead, or reassign those stories first.`,
-                          );
-                          return;
-                        }
-                        setDeleteTarget(genre);
-                      }}
-                    >
-                      Delete
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : paginatedGenres.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center text-muted-foreground py-10"
+                  >
+                    No genres yet. Add your first genre to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedGenres.map((genre, index) => (
+                  <TableRow key={genre.id}>
+                    <SerialNumberCell index={index} offset={serialOffset} />
+                    <TableCell className="font-medium">{genre.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {genre.storyCount > 0 ? (
+                        <Link
+                          href={`/stories?genre=${encodeURIComponent(genre.name)}`}
+                          className="text-primary hover:underline"
+                        >
+                          {genre.storyCount}
+                        </Link>
+                      ) : (
+                        0
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums hidden sm:table-cell">
+                      {genre.userCount}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={genre.isActive ? "default" : "secondary"}>
+                        {genre.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell tabular-nums text-muted-foreground">
+                      {genre.sortOrder}
+                    </TableCell>
+                    <TableCell className="space-x-2 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(genre)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={genre.id.startsWith("legacy-")}
+                        onClick={() => {
+                          if (genre.storyCount > 0) {
+                            toast.error(
+                              `"${genre.name}" is used by ${genre.storyCount} ${genre.storyCount === 1 ? "story" : "stories"}. Deactivate it instead, or reassign those stories first.`,
+                            );
+                            return;
+                          }
+                          setDeleteTarget(genre);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          disabled={isLoading}
+        />
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

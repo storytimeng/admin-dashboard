@@ -5,6 +5,12 @@ import useSWR from "swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +54,19 @@ function ContentCrudPage({
   contentLabel: string;
 }) {
   const { data, isLoading, mutate } = useSWR(fetchKey, fetchFn);
+  const items = data ?? [];
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    total,
+    totalPages,
+    paginatedItems: paginatedItems,
+    serialOffset,
+    handlePageSizeChange,
+  } = useClientPagination(items);
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FaqItem | null>(null);
   const [form, setForm] = useState({ question: "", answer: "" });
@@ -99,58 +118,81 @@ function ContentCrudPage({
           </Button>
         }
       />
-      <div className="rounded-xl border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title / Question</TableHead>
-              <TableHead className="w-40" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <div className="space-y-4">
+        <div className="rounded-xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={2}>
-                  <Skeleton className="h-8 w-full" />
-                </TableCell>
+                <SerialNumberHead />
+                <TableHead>Title / Question</TableHead>
+                <TableHead className="w-40" />
               </TableRow>
-            ) : (
-              data?.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium max-w-lg truncate">
-                    {item.question || "—"}
-                  </TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEdit(item)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={async () => {
-                        try {
-                          await deleteFn(item.id);
-                          toast.success("Deleted");
-                          await mutate();
-                        } catch (err) {
-                          toast.error(
-                            err instanceof Error ? err.message : "Failed",
-                          );
-                        }
-                      }}
-                    >
-                      Delete
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : paginatedItems.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No items yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <SerialNumberCell index={index} offset={serialOffset} />
+                    <TableCell className="font-medium max-w-lg truncate">
+                      {item.question || "—"}
+                    </TableCell>
+                    <TableCell className="space-x-2 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(item)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          try {
+                            await deleteFn(item.id);
+                            toast.success("Deleted");
+                            await mutate();
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error ? err.message : "Failed",
+                            );
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          disabled={isLoading}
+        />
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

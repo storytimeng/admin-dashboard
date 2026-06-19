@@ -30,6 +30,12 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -119,6 +125,24 @@ export function DashboardAnalyticsView({
 }) {
   const s = analytics?.summary;
   const subs = s?.subscriptions;
+
+  const topStories = analytics?.topStories ?? [];
+  const topAuthors = analytics?.topAuthors ?? [];
+  const recentUsers = analytics?.recentUsers ?? [];
+  const recentStories = analytics?.recentStories ?? [];
+
+  const topStoriesPagination = useClientPagination(topStories, {
+    defaultPageSize: 10,
+  });
+  const topAuthorsPagination = useClientPagination(topAuthors, {
+    defaultPageSize: 10,
+  });
+  const recentUsersPagination = useClientPagination(recentUsers, {
+    defaultPageSize: 10,
+  });
+  const recentStoriesPagination = useClientPagination(recentStories, {
+    defaultPageSize: 10,
+  });
 
   const revenueTrendByDate = (() => {
     const map = new Map<string, Record<string, number | string>>();
@@ -497,51 +521,67 @@ export function DashboardAnalyticsView({
               View all
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {loading ? (
               <Skeleton className="h-48 w-full" />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead className="text-right">Reads</TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">
-                      <Heart className="inline size-3" />
-                    </TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">
-                      <MessageSquare className="inline size-3" />
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(analytics?.topStories ?? []).map((story) => (
-                    <TableRow key={story.id}>
-                      <TableCell>
-                        <Link
-                          href={`/stories/${story.id}`}
-                          className="font-medium hover:underline line-clamp-1"
-                        >
-                          {story.title}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">
-                          {story.authorPenName ?? "Unknown"} ·{" "}
-                          {story.storyStatus}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {story.reads}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums hidden sm:table-cell">
-                        {story.likes}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums hidden sm:table-cell">
-                        {story.comments}
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SerialNumberHead />
+                      <TableHead>Title</TableHead>
+                      <TableHead className="text-right">Reads</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">
+                        <Heart className="inline size-3" />
+                      </TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">
+                        <MessageSquare className="inline size-3" />
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {topStoriesPagination.paginatedItems.map((story, index) => (
+                      <TableRow key={story.id}>
+                        <SerialNumberCell
+                          index={index}
+                          offset={topStoriesPagination.serialOffset}
+                        />
+                        <TableCell>
+                          <Link
+                            href={`/stories/${story.id}`}
+                            className="font-medium hover:underline line-clamp-1"
+                          >
+                            {story.title}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">
+                            {story.authorPenName ?? "Unknown"} ·{" "}
+                            {story.storyStatus}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {story.reads}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums hidden sm:table-cell">
+                          {story.likes}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums hidden sm:table-cell">
+                          {story.comments}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  page={topStoriesPagination.page}
+                  totalPages={topStoriesPagination.totalPages}
+                  total={topStoriesPagination.total}
+                  pageSize={topStoriesPagination.pageSize}
+                  onPageChange={topStoriesPagination.setPage}
+                  onPageSizeChange={topStoriesPagination.handlePageSizeChange}
+                  pageSizeOptions={[5, 10, 20]}
+                />
+              </>
             )}
           </CardContent>
         </Card>
@@ -556,39 +596,57 @@ export function DashboardAnalyticsView({
               View users
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {loading ? (
               <Skeleton className="h-48 w-full" />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Author</TableHead>
-                    <TableHead className="text-right">Stories</TableHead>
-                    <TableHead className="text-right">Reads</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(analytics?.topAuthors ?? []).map((author) => (
-                    <TableRow key={author.authorId}>
-                      <TableCell>
-                        <p className="font-medium">
-                          {author.penName ?? author.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {author.email}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {author.storyCount}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {author.totalReads}
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SerialNumberHead />
+                      <TableHead>Author</TableHead>
+                      <TableHead className="text-right">Stories</TableHead>
+                      <TableHead className="text-right">Reads</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {topAuthorsPagination.paginatedItems.map(
+                      (author, index) => (
+                        <TableRow key={author.authorId}>
+                          <SerialNumberCell
+                            index={index}
+                            offset={topAuthorsPagination.serialOffset}
+                          />
+                          <TableCell>
+                            <p className="font-medium">
+                              {author.penName ?? author.email}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {author.email}
+                            </p>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {author.storyCount}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {author.totalReads}
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  page={topAuthorsPagination.page}
+                  totalPages={topAuthorsPagination.totalPages}
+                  total={topAuthorsPagination.total}
+                  pageSize={topAuthorsPagination.pageSize}
+                  onPageChange={topAuthorsPagination.setPage}
+                  onPageSizeChange={topAuthorsPagination.handlePageSizeChange}
+                  pageSizeOptions={[5, 10, 20]}
+                />
+              </>
             )}
           </CardContent>
         </Card>
@@ -599,45 +657,61 @@ export function DashboardAnalyticsView({
           <CardHeader>
             <CardTitle className="text-base">Recent signups</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {loading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead className="text-right">Joined</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(analytics?.recentUsers ?? []).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <p className="font-medium">
-                          {user.penName ?? user.email}
-                          {user.isPremium ? (
-                            <Badge
-                              variant="secondary"
-                              className="ml-2 text-[10px]"
-                            >
-                              Premium
-                            </Badge>
-                          ) : null}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(new Date(user.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SerialNumberHead />
+                      <TableHead>User</TableHead>
+                      <TableHead className="text-right">Joined</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentUsersPagination.paginatedItems.map((user, index) => (
+                      <TableRow key={user.id}>
+                        <SerialNumberCell
+                          index={index}
+                          offset={recentUsersPagination.serialOffset}
+                        />
+                        <TableCell>
+                          <p className="font-medium">
+                            {user.penName ?? user.email}
+                            {user.isPremium ? (
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 text-[10px]"
+                              >
+                                Premium
+                              </Badge>
+                            ) : null}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(user.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  page={recentUsersPagination.page}
+                  totalPages={recentUsersPagination.totalPages}
+                  total={recentUsersPagination.total}
+                  pageSize={recentUsersPagination.pageSize}
+                  onPageChange={recentUsersPagination.setPage}
+                  onPageSizeChange={recentUsersPagination.handlePageSizeChange}
+                  pageSizeOptions={[5, 10, 20]}
+                />
+              </>
             )}
           </CardContent>
         </Card>
@@ -646,47 +720,69 @@ export function DashboardAnalyticsView({
           <CardHeader>
             <CardTitle className="text-base">Recent stories</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {loading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Story</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(analytics?.recentStories ?? []).map((story) => (
-                    <TableRow key={story.id}>
-                      <TableCell>
-                        <Link
-                          href={`/stories/${story.id}`}
-                          className="font-medium hover:underline line-clamp-1"
-                        >
-                          {story.title}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">
-                          {story.authorPenName ?? "Unknown"} ·{" "}
-                          {formatDistanceToNow(new Date(story.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant={
-                            story.isSuspended ? "destructive" : "secondary"
-                          }
-                        >
-                          {story.isSuspended ? "Suspended" : story.storyStatus}
-                        </Badge>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SerialNumberHead />
+                      <TableHead>Story</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentStoriesPagination.paginatedItems.map(
+                      (story, index) => (
+                        <TableRow key={story.id}>
+                          <SerialNumberCell
+                            index={index}
+                            offset={recentStoriesPagination.serialOffset}
+                          />
+                          <TableCell>
+                            <Link
+                              href={`/stories/${story.id}`}
+                              className="font-medium hover:underline line-clamp-1"
+                            >
+                              {story.title}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">
+                              {story.authorPenName ?? "Unknown"} ·{" "}
+                              {formatDistanceToNow(new Date(story.createdAt), {
+                                addSuffix: true,
+                              })}
+                            </p>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge
+                              variant={
+                                story.isSuspended ? "destructive" : "secondary"
+                              }
+                            >
+                              {story.isSuspended
+                                ? "Suspended"
+                                : story.storyStatus}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  page={recentStoriesPagination.page}
+                  totalPages={recentStoriesPagination.totalPages}
+                  total={recentStoriesPagination.total}
+                  pageSize={recentStoriesPagination.pageSize}
+                  onPageChange={recentStoriesPagination.setPage}
+                  onPageSizeChange={
+                    recentStoriesPagination.handlePageSizeChange
+                  }
+                  pageSizeOptions={[5, 10, 20]}
+                />
+              </>
             )}
           </CardContent>
         </Card>

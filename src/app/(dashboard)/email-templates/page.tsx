@@ -5,6 +5,15 @@ import useSWR from "swr";
 import { Eye, Loader2, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import {
+  DEFAULT_TABLE_PAGE_SIZE,
+  useClientPagination,
+} from "@/hooks/use-client-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,9 +46,32 @@ export default function EmailTemplatesPage() {
   const { data, isLoading, mutate } = useSWR("email-templates", () =>
     adminApi.getEmailTemplates(),
   );
+
+  const templates = data ?? [];
+  const {
+    page: templatesPage,
+    setPage: setTemplatesPage,
+    pageSize: templatesPageSize,
+    total: templatesTotal,
+    totalPages: templatesTotalPages,
+    paginatedItems: paginatedTemplates,
+    serialOffset: templatesSerialOffset,
+    handlePageSizeChange: handleTemplatesPageSizeChange,
+  } = useClientPagination(templates);
+
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsPageSize, setLogsPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+
   const { data: deliveryLogs, isLoading: logsLoading } = useSWR(
-    "email-delivery-logs",
-    () => adminApi.getEmailDeliveryLogs({ page: 1, limit: 50 }),
+    ["email-delivery-logs", logsPage, logsPageSize],
+    () =>
+      adminApi.getEmailDeliveryLogs({ page: logsPage, limit: logsPageSize }),
+  );
+
+  const logsSerialOffset = (logsPage - 1) * logsPageSize;
+  const logsTotalPages = Math.max(
+    1,
+    Math.ceil((deliveryLogs?.total ?? 0) / logsPageSize),
   );
 
   const [open, setOpen] = useState(false);
@@ -122,11 +154,12 @@ export default function EmailTemplatesPage() {
           <TabsTrigger value="logs">Delivery logs</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="templates" className="mt-4">
+        <TabsContent value="templates" className="mt-4 space-y-4">
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SerialNumberHead />
                   <TableHead>Template</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
@@ -137,13 +170,26 @@ export default function EmailTemplatesPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={6}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
+                ) : paginatedTemplates.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No templates found
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  data?.map((template) => (
+                  paginatedTemplates.map((template, index) => (
                     <TableRow key={template.slug}>
+                      <SerialNumberCell
+                        index={index}
+                        offset={templatesSerialOffset}
+                      />
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Mail className="size-4 text-muted-foreground" />
@@ -190,13 +236,24 @@ export default function EmailTemplatesPage() {
               </TableBody>
             </Table>
           </div>
+
+          <TablePagination
+            page={templatesPage}
+            totalPages={templatesTotalPages}
+            total={templatesTotal}
+            pageSize={templatesPageSize}
+            onPageChange={setTemplatesPage}
+            onPageSizeChange={handleTemplatesPageSizeChange}
+            disabled={isLoading}
+          />
         </TabsContent>
 
-        <TabsContent value="logs" className="mt-4">
+        <TabsContent value="logs" className="mt-4 space-y-4">
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SerialNumberHead />
                   <TableHead>Template</TableHead>
                   <TableHead>Recipient</TableHead>
                   <TableHead>Status</TableHead>
@@ -206,13 +263,17 @@ export default function EmailTemplatesPage() {
               <TableBody>
                 {logsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
                 ) : deliveryLogs?.data?.length ? (
-                  deliveryLogs.data.map((log) => (
+                  deliveryLogs.data.map((log, index) => (
                     <TableRow key={log.id}>
+                      <SerialNumberCell
+                        index={index}
+                        offset={logsSerialOffset}
+                      />
                       <TableCell>{log.templateSlug || "—"}</TableCell>
                       <TableCell>{log.recipientEmail || "—"}</TableCell>
                       <TableCell>
@@ -232,7 +293,7 @@ export default function EmailTemplatesPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="py-8 text-center text-muted-foreground"
                     >
                       No delivery logs yet
@@ -242,6 +303,19 @@ export default function EmailTemplatesPage() {
               </TableBody>
             </Table>
           </div>
+
+          <TablePagination
+            page={logsPage}
+            totalPages={logsTotalPages}
+            total={deliveryLogs?.total ?? 0}
+            pageSize={logsPageSize}
+            onPageChange={setLogsPage}
+            onPageSizeChange={(size) => {
+              setLogsPageSize(size);
+              setLogsPage(1);
+            }}
+            disabled={logsLoading}
+          />
         </TabsContent>
       </Tabs>
 

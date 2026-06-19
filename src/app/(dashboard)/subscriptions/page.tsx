@@ -1,7 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { PageHeader } from "@/components/shared/page-header";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { DEFAULT_TABLE_PAGE_SIZE } from "@/hooks/use-client-pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -17,22 +24,45 @@ import { adminApi } from "@/lib/api/admin";
 import { formatDistanceToNow } from "date-fns";
 
 export default function SubscriptionsPage() {
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [paymentsPageSize, setPaymentsPageSize] = useState(
+    DEFAULT_TABLE_PAGE_SIZE,
+  );
+  const [recordsPage, setRecordsPage] = useState(1);
+  const [recordsPageSize, setRecordsPageSize] = useState(
+    DEFAULT_TABLE_PAGE_SIZE,
+  );
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPageSize, setAuditPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+
   const { data: overview, isLoading: overviewLoading } = useSWR(
     "subs-overview",
     () => adminApi.getSubscriptionOverview(),
   );
   const { data: payments, isLoading: paymentsLoading } = useSWR(
-    "subs-payments",
-    () => adminApi.getPayments({ page: 1, limit: 50 }),
+    ["subs-payments", paymentsPage, paymentsPageSize],
+    () => adminApi.getPayments({ page: paymentsPage, limit: paymentsPageSize }),
   );
   const { data: records, isLoading: recordsLoading } = useSWR(
-    "subs-records",
-    () => adminApi.getSubscriptionRecords({ page: 1, limit: 50 }),
+    ["subs-records", recordsPage, recordsPageSize],
+    () =>
+      adminApi.getSubscriptionRecords({
+        page: recordsPage,
+        limit: recordsPageSize,
+      }),
   );
   const { data: auditLogs, isLoading: auditLoading } = useSWR(
-    "subs-audit-logs",
-    () => adminApi.getSubscriptionAuditLogs({ page: 1, limit: 50 }),
+    ["subs-audit-logs", auditPage, auditPageSize],
+    () =>
+      adminApi.getSubscriptionAuditLogs({
+        page: auditPage,
+        limit: auditPageSize,
+      }),
   );
+
+  const paymentsSerialOffset = (paymentsPage - 1) * paymentsPageSize;
+  const recordsSerialOffset = (recordsPage - 1) * recordsPageSize;
+  const auditSerialOffset = (auditPage - 1) * auditPageSize;
 
   return (
     <div className="space-y-6">
@@ -68,11 +98,12 @@ export default function SubscriptionsPage() {
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="audit">Audit trail</TabsTrigger>
         </TabsList>
-        <TabsContent value="payments" className="mt-4">
+        <TabsContent value="payments" className="mt-4 space-y-4">
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SerialNumberHead />
                   <TableHead>Reference</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Plan</TableHead>
@@ -84,13 +115,17 @@ export default function SubscriptionsPage() {
               <TableBody>
                 {paymentsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
-                ) : (
-                  payments?.payments?.map((p) => (
+                ) : payments?.payments?.length ? (
+                  payments.payments.map((p, index) => (
                     <TableRow key={p.id}>
+                      <SerialNumberCell
+                        index={index}
+                        offset={paymentsSerialOffset}
+                      />
                       <TableCell className="font-mono text-xs">
                         {p.reference}
                       </TableCell>
@@ -116,16 +151,39 @@ export default function SubscriptionsPage() {
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No payments found
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
+
+          <TablePagination
+            page={paymentsPage}
+            totalPages={payments?.totalPages ?? 1}
+            total={payments?.total ?? 0}
+            pageSize={paymentsPageSize}
+            onPageChange={setPaymentsPage}
+            onPageSizeChange={(size) => {
+              setPaymentsPageSize(size);
+              setPaymentsPage(1);
+            }}
+            disabled={paymentsLoading}
+          />
         </TabsContent>
-        <TabsContent value="subscriptions" className="mt-4">
+        <TabsContent value="subscriptions" className="mt-4 space-y-4">
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SerialNumberHead />
                   <TableHead>User</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>Status</TableHead>
@@ -135,13 +193,17 @@ export default function SubscriptionsPage() {
               <TableBody>
                 {recordsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
-                ) : (
-                  records?.subscriptions?.map((s) => (
+                ) : records?.subscriptions?.length ? (
+                  records.subscriptions.map((s, index) => (
                     <TableRow key={s.id}>
+                      <SerialNumberCell
+                        index={index}
+                        offset={recordsSerialOffset}
+                      />
                       <TableCell>{s.userEmail || s.userId}</TableCell>
                       <TableCell>{s.planName || s.planCode}</TableCell>
                       <TableCell>
@@ -158,16 +220,39 @@ export default function SubscriptionsPage() {
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No subscriptions found
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
+
+          <TablePagination
+            page={recordsPage}
+            totalPages={records?.totalPages ?? 1}
+            total={records?.total ?? 0}
+            pageSize={recordsPageSize}
+            onPageChange={setRecordsPage}
+            onPageSizeChange={(size) => {
+              setRecordsPageSize(size);
+              setRecordsPage(1);
+            }}
+            disabled={recordsLoading}
+          />
         </TabsContent>
-        <TabsContent value="audit" className="mt-4">
+        <TabsContent value="audit" className="mt-4 space-y-4">
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SerialNumberHead />
                   <TableHead>Action</TableHead>
                   <TableHead>Entity</TableHead>
                   <TableHead>Actor</TableHead>
@@ -177,13 +262,17 @@ export default function SubscriptionsPage() {
               <TableBody>
                 {auditLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
                 ) : auditLogs?.items?.length ? (
-                  auditLogs.items.map((log) => (
+                  auditLogs.items.map((log, index) => (
                     <TableRow key={log.id}>
+                      <SerialNumberCell
+                        index={index}
+                        offset={auditSerialOffset}
+                      />
                       <TableCell>
                         <Badge variant="outline" className="font-mono text-xs">
                           {log.action}
@@ -212,7 +301,7 @@ export default function SubscriptionsPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="py-8 text-center text-muted-foreground"
                     >
                       No audit events yet
@@ -222,6 +311,19 @@ export default function SubscriptionsPage() {
               </TableBody>
             </Table>
           </div>
+
+          <TablePagination
+            page={auditPage}
+            totalPages={auditLogs?.totalPages ?? 1}
+            total={auditLogs?.total ?? 0}
+            pageSize={auditPageSize}
+            onPageChange={setAuditPage}
+            onPageSizeChange={(size) => {
+              setAuditPageSize(size);
+              setAuditPage(1);
+            }}
+            disabled={auditLoading}
+          />
         </TabsContent>
       </Tabs>
     </div>

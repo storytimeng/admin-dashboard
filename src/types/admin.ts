@@ -154,6 +154,7 @@ export interface AdminComment {
   content: string;
   type?: "story" | "episode" | "chapter";
   createdAt?: string;
+  storyTitle?: string;
   user?: { penName?: string; email?: string };
   story?: { id: string; title: string };
 }

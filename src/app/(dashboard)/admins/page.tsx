@@ -6,6 +6,12 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,6 +75,18 @@ export default function AdminsPage() {
   } | null>(null);
 
   const isSuperAdmin = currentAdmin?.role === "super_admin";
+  const admins = data ?? [];
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    total,
+    totalPages,
+    paginatedItems: paginatedAdmins,
+    serialOffset,
+    handlePageSizeChange,
+  } = useClientPagination(admins);
 
   const handleInvite = async () => {
     setSubmitting(true);
@@ -142,87 +160,112 @@ export default function AdminsPage() {
         }
       />
 
-      <div className="rounded-xl border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              {isSuperAdmin ? <TableHead /> : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <div className="space-y-4">
+        <div className="rounded-xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5}>
-                  <Skeleton className="h-8 w-full" />
-                </TableCell>
+                <SerialNumberHead />
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                {isSuperAdmin ? <TableHead /> : null}
               </TableRow>
-            ) : (
-              data?.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell className="font-medium">
-                    {admin.firstName} {admin.lastName}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={isSuperAdmin ? 6 : 5}>
+                    <Skeleton className="h-8 w-full" />
                   </TableCell>
-                  <TableCell>{admin.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="capitalize">
-                      {admin.role.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {admin.isSuspended ? (
-                      <Badge variant="destructive">Suspended</Badge>
-                    ) : (
-                      <Badge variant="outline">Active</Badge>
-                    )}
-                  </TableCell>
-                  {isSuperAdmin ? (
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditRole(admin)}
-                      >
-                        Edit role
-                      </Button>
-                      {admin.isSuspended ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setConfirm({ admin, action: "unsuspend" })
-                          }
-                        >
-                          Unsuspend
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setConfirm({ admin, action: "suspend" })
-                          }
-                        >
-                          Suspend
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setConfirm({ admin, action: "delete" })}
-                      >
-                        Remove
-                      </Button>
-                    </TableCell>
-                  ) : null}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : paginatedAdmins.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={isSuperAdmin ? 6 : 5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No admins found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedAdmins.map((admin, index) => (
+                  <TableRow key={admin.id}>
+                    <SerialNumberCell index={index} offset={serialOffset} />
+                    <TableCell className="font-medium">
+                      {admin.firstName} {admin.lastName}
+                    </TableCell>
+                    <TableCell>{admin.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="capitalize">
+                        {admin.role.replace("_", " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {admin.isSuspended ? (
+                        <Badge variant="destructive">Suspended</Badge>
+                      ) : (
+                        <Badge variant="outline">Active</Badge>
+                      )}
+                    </TableCell>
+                    {isSuperAdmin ? (
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditRole(admin)}
+                        >
+                          Edit role
+                        </Button>
+                        {admin.isSuspended ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setConfirm({ admin, action: "unsuspend" })
+                            }
+                          >
+                            Unsuspend
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setConfirm({ admin, action: "suspend" })
+                            }
+                          >
+                            Suspend
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            setConfirm({ admin, action: "delete" })
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          disabled={isLoading}
+        />
       </div>
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>

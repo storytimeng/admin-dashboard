@@ -6,6 +6,12 @@ import { MoreHorizontal, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TablePagination } from "@/components/shared/table-pagination";
+import {
+  SerialNumberCell,
+  SerialNumberHead,
+} from "@/components/shared/serial-number-head";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -51,6 +57,17 @@ export default function UsersPage() {
     );
   }, [data?.users, search]);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    total,
+    totalPages,
+    paginatedItems: paginatedUsers,
+    serialOffset,
+    handlePageSizeChange,
+  } = useClientPagination(users, { resetKeys: [search] });
+
   const runAction = async () => {
     if (!confirm) return;
     setActionLoading(true);
@@ -86,109 +103,125 @@ export default function UsersPage() {
         />
       </div>
 
-      <div className="rounded-xl border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Pen name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last active</TableHead>
-              <TableHead className="w-12" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={5}>
-                    <Skeleton className="h-8 w-full" />
+      <div className="space-y-4">
+        <div className="rounded-xl border bg-card overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SerialNumberHead />
+                <TableHead>Pen name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last active</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={6}>
+                      <Skeleton className="h-8 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-destructive py-8"
+                  >
+                    Failed to load users
                   </TableCell>
                 </TableRow>
-              ))
-            ) : error ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-destructive py-8"
-                >
-                  Failed to load users
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-8"
-                >
-                  No users found
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.penName || "—"}
+              ) : paginatedUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    No users found
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {user.deletedAt ? (
-                      <Badge variant="secondary">Deleted</Badge>
-                    ) : user.isSuspended ? (
-                      <Badge variant="destructive">Suspended</Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-green-700 border-green-200"
-                      >
-                        Active
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {user.lastActiveAt
-                      ? formatDistanceToNow(new Date(user.lastActiveAt), {
-                          addSuffix: true,
-                        })
-                      : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent outline-none">
-                        <MoreHorizontal className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {user.isSuspended ? (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setConfirm({ user, action: "unsuspend" })
-                            }
-                          >
-                            Unsuspend
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setConfirm({ user, action: "suspend" })
-                            }
-                          >
-                            Suspend
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setConfirm({ user, action: "delete" })}
+                </TableRow>
+              ) : (
+                paginatedUsers.map((user, index) => (
+                  <TableRow key={user.id}>
+                    <SerialNumberCell index={index} offset={serialOffset} />
+                    <TableCell className="font-medium">
+                      {user.penName || "—"}
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.deletedAt ? (
+                        <Badge variant="secondary">Deleted</Badge>
+                      ) : user.isSuspended ? (
+                        <Badge variant="destructive">Suspended</Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-green-700 border-green-200"
                         >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                          Active
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {user.lastActiveAt
+                        ? formatDistanceToNow(new Date(user.lastActiveAt), {
+                            addSuffix: true,
+                          })
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent outline-none">
+                          <MoreHorizontal className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.isSuspended ? (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setConfirm({ user, action: "unsuspend" })
+                              }
+                            >
+                              Unsuspend
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setConfirm({ user, action: "suspend" })
+                              }
+                            >
+                              Suspend
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() =>
+                              setConfirm({ user, action: "delete" })
+                            }
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          disabled={isLoading}
+        />
       </div>
 
       <ConfirmDialog
