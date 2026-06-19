@@ -64,6 +64,192 @@ function statusVariant(
   }
 }
 
+function displayText(value?: string | null): string {
+  const trimmed = value?.trim();
+  return trimmed || "—";
+}
+
+function formatWeeklyCommitment(hours: number): string {
+  if (hours <= 0) return "—";
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
+function getApplicationReviewFields(application: AmbassadorApplicationItem) {
+  const storytimeRole = application.storytimeRole?.trim() || null;
+  const readingExperience = application.readingExperience?.trim() || null;
+  const conflictHandling =
+    application.conflictHandling?.trim() ||
+    application.writingExperience?.trim() ||
+    null;
+  const showLegacyReadingExperience =
+    !application.profileTypes?.length && !storytimeRole && !!readingExperience;
+
+  return {
+    storytimeRole,
+    readingExperience,
+    conflictHandling,
+    showLegacyReadingExperience,
+  };
+}
+
+function ApplicationReviewDetails({
+  application,
+  declineReason,
+  onDeclineReasonChange,
+}: {
+  application: AmbassadorApplicationItem;
+  declineReason: string;
+  onDeclineReasonChange: (value: string) => void;
+}) {
+  const reviewFields = getApplicationReviewFields(application);
+
+  return (
+    <div className="space-y-4 text-sm">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-muted-foreground">Name</p>
+          <p className="font-medium">{application.fullName}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Type</p>
+          <p className="font-medium capitalize">{application.type}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Email</p>
+          <p>{application.email}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Location</p>
+          <p>
+            {application.city}, {application.country}
+          </p>
+        </div>
+        {application.institution && (
+          <div className="col-span-2">
+            <p className="text-muted-foreground">Institution</p>
+            <p>{application.institution}</p>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="text-muted-foreground mb-1">Why join</p>
+        <p className="whitespace-pre-wrap">{application.whyJoin}</p>
+      </div>
+
+      {(application.profileTypes?.length ?? 0) > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-1">Profile types</p>
+          <div className="flex flex-wrap gap-2">
+            {application.profileTypes?.map((item) => (
+              <Badge key={item} variant="outline">
+                {item}
+              </Badge>
+            ))}
+          </div>
+          {application.otherProfileType && (
+            <p className="mt-2 whitespace-pre-wrap">
+              Other: {application.otherProfileType}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="text-muted-foreground mb-1">Storytime role</p>
+        <p>{displayText(reviewFields.storytimeRole)}</p>
+      </div>
+
+      {reviewFields.showLegacyReadingExperience && (
+        <div>
+          <p className="text-muted-foreground mb-1">Reading experience</p>
+          <p className="whitespace-pre-wrap">
+            {reviewFields.readingExperience}
+          </p>
+        </div>
+      )}
+
+      <div>
+        <p className="text-muted-foreground mb-1">
+          Part of organized community
+        </p>
+        <p>
+          {(application.partOfOrganizedCommunity ??
+          application.hasLedCommunityBefore)
+            ? "Yes"
+            : "No"}
+        </p>
+      </div>
+
+      {(application.promotionMethods?.length ?? 0) > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-1">Promotion methods</p>
+          <div className="flex flex-wrap gap-2">
+            {application.promotionMethods?.map((item) => (
+              <Badge key={item} variant="outline">
+                {item}
+              </Badge>
+            ))}
+          </div>
+          {application.otherPromotionDetail && (
+            <p className="mt-2 whitespace-pre-wrap">
+              Other: {application.otherPromotionDetail}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="text-muted-foreground mb-1">Conflict handling</p>
+        <p className="whitespace-pre-wrap">
+          {displayText(reviewFields.conflictHandling)}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-muted-foreground mb-1">Favorite genres</p>
+        {application.favoriteGenres.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {application.favoriteGenres.map((genre) => (
+              <Badge key={genre} variant="outline">
+                {genre}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <p>—</p>
+        )}
+      </div>
+
+      <p>
+        <span className="text-muted-foreground">Weekly commitment:</span>{" "}
+        {formatWeeklyCommitment(application.weeklyHoursCommitment)}
+      </p>
+
+      {!application.promotionMethods?.length && (
+        <div>
+          <p className="text-muted-foreground mb-1">Community plan</p>
+          <p className="whitespace-pre-wrap">
+            {application.communityDescription}
+          </p>
+        </div>
+      )}
+
+      {application.status === "pending" && (
+        <div className="space-y-2 pt-2">
+          <Label htmlFor="decline-reason">Decline reason (if declining)</Label>
+          <Textarea
+            id="decline-reason"
+            value={declineReason}
+            onChange={(e) => onDeclineReasonChange(e.target.value)}
+            placeholder="Required when declining an application"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AmbassadorsPage() {
   const [tab, setTab] = useState<AmbassadorApplicationStatus | "all">(
     "pending",
@@ -237,135 +423,11 @@ export default function AmbassadorsPage() {
           </DialogHeader>
 
           {selected && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-muted-foreground">Name</p>
-                  <p className="font-medium">{selected.fullName}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Type</p>
-                  <p className="font-medium capitalize">{selected.type}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p>{selected.email}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Location</p>
-                  <p>
-                    {selected.city}, {selected.country}
-                  </p>
-                </div>
-                {selected.institution && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Institution</p>
-                    <p>{selected.institution}</p>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <p className="text-muted-foreground mb-1">Why join</p>
-                <p className="whitespace-pre-wrap">{selected.whyJoin}</p>
-              </div>
-
-              {(selected.profileTypes?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-muted-foreground mb-1">Profile types</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selected.profileTypes?.map((item) => (
-                      <Badge key={item} variant="outline">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                  {selected.otherProfileType && (
-                    <p className="mt-2 whitespace-pre-wrap">
-                      Other: {selected.otherProfileType}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <p className="text-muted-foreground mb-1">Storytime role</p>
-                <p>{selected.storytimeRole || selected.readingExperience}</p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground mb-1">
-                  Part of organized community
-                </p>
-                <p>
-                  {(selected.partOfOrganizedCommunity ??
-                  selected.hasLedCommunityBefore)
-                    ? "Yes"
-                    : "No"}
-                </p>
-              </div>
-
-              {(selected.promotionMethods?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-muted-foreground mb-1">
-                    Promotion methods
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selected.promotionMethods?.map((item) => (
-                      <Badge key={item} variant="outline">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                  {selected.otherPromotionDetail && (
-                    <p className="mt-2 whitespace-pre-wrap">
-                      Other: {selected.otherPromotionDetail}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <p className="text-muted-foreground mb-1">Conflict handling</p>
-                <p className="whitespace-pre-wrap">
-                  {selected.conflictHandling || selected.writingExperience}
-                </p>
-              </div>
-
-              {!selected.profileTypes?.length && (
-                <div>
-                  <p className="text-muted-foreground mb-1">
-                    Reading experience
-                  </p>
-                  <p className="whitespace-pre-wrap">
-                    {selected.readingExperience}
-                  </p>
-                </div>
-              )}
-
-              {!selected.promotionMethods?.length && (
-                <div>
-                  <p className="text-muted-foreground mb-1">Community plan</p>
-                  <p className="whitespace-pre-wrap">
-                    {selected.communityDescription}
-                  </p>
-                </div>
-              )}
-
-              {selected.status === "pending" && (
-                <div className="space-y-2 pt-2">
-                  <Label htmlFor="decline-reason">
-                    Decline reason (if declining)
-                  </Label>
-                  <Textarea
-                    id="decline-reason"
-                    value={declineReason}
-                    onChange={(e) => setDeclineReason(e.target.value)}
-                    placeholder="Required when declining an application"
-                  />
-                </div>
-              )}
-            </div>
+            <ApplicationReviewDetails
+              application={selected}
+              declineReason={declineReason}
+              onDeclineReasonChange={setDeclineReason}
+            />
           )}
 
           <DialogFooter>
