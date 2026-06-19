@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { Eye, Loader2, Mail, Pencil } from "lucide-react";
+import { Eye, Loader2, Mail, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { TablePagination } from "@/components/shared/table-pagination";
@@ -37,10 +37,39 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { EmailTemplateSummary } from "@/types/admin";
 import { formatDistanceToNow } from "date-fns";
+
+const CATEGORY_FILTERS = [
+  { value: "all", label: "All templates" },
+  { value: "subscription", label: "Subscriptions & Premium" },
+  { value: "onboarding", label: "Onboarding" },
+  { value: "engagement", label: "Engagement" },
+  { value: "milestone", label: "Milestones" },
+  { value: "security", label: "Security" },
+] as const;
+
+type CategoryFilter = (typeof CATEGORY_FILTERS)[number]["value"];
+
+function matchesCategoryFilter(
+  template: EmailTemplateSummary,
+  filter: CategoryFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "subscription") {
+    return template.slug.startsWith("subscription_");
+  }
+  return template.category === filter;
+}
 
 export default function EmailTemplatesPage() {
   const { data, isLoading, mutate } = useSWR("email-templates", () =>
@@ -48,6 +77,17 @@ export default function EmailTemplatesPage() {
   );
 
   const templates = data ?? [];
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [syncing, setSyncing] = useState(false);
+
+  const filteredTemplates = useMemo(
+    () =>
+      templates.filter((template) =>
+        matchesCategoryFilter(template, categoryFilter),
+      ),
+    [templates, categoryFilter],
+  );
+
   const {
     page: templatesPage,
     setPage: setTemplatesPage,
@@ -57,7 +97,7 @@ export default function EmailTemplatesPage() {
     paginatedItems: paginatedTemplates,
     serialOffset: templatesSerialOffset,
     handlePageSizeChange: handleTemplatesPageSizeChange,
-  } = useClientPagination(templates);
+  } = useClientPagination(filteredTemplates);
 
   const [logsPage, setLogsPage] = useState(1);
   const [logsPageSize, setLogsPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
@@ -87,7 +127,29 @@ export default function EmailTemplatesPage() {
     bodyText: "",
     isActive: true,
   });
+  const [variableHints, setVariableHints] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const syncTemplates = async () => {
+    setSyncing(true);
+    try {
+      const result = await adminApi.syncEmailTemplates();
+      if (result.inserted > 0) {
+        toast.success(
+          `Added ${result.inserted} new template(s). ${result.totalInDatabase} total available.`,
+        );
+      } else {
+        toast.success(
+          `All ${result.totalDefaults} platform templates are already in the database.`,
+        );
+      }
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const openEdit = async (template: EmailTemplateSummary) => {
     setEditing(template);
@@ -101,6 +163,7 @@ export default function EmailTemplatesPage() {
         bodyText: full.bodyText || "",
         isActive: full.isActive ?? true,
       });
+      setVariableHints(full.variableHints ?? template.variableHints ?? []);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to load template",
@@ -145,7 +208,22 @@ export default function EmailTemplatesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Email Templates"
-        description="Edit transactional email subjects and HTML bodies sent by the platform."
+        description="View and edit every automated email — onboarding, milestones, subscriptions, security, and more. Use {{VariableName}} placeholders in subject and body."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncTemplates}
+            disabled={syncing || isLoading}
+          >
+            {syncing ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 size-4" />
+            )}
+            Sync missing templates
+          </Button>
+        }
       />
 
       <Tabs defaultValue="templates">
@@ -155,6 +233,33 @@ export default function EmailTemplatesPage() {
         </TabsList>
 
         <TabsContent value="templates" className="mt-4 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {filteredTemplates.length} of {templates.length} template
+              {templates.length === 1 ? "" : "s"} shown
+            </p>
+            <Select
+              value={categoryFilter}
+              onValueChange={(value) => {
+                if (value) {
+                  setCategoryFilter(value as CategoryFilter);
+                  setTemplatesPage(1);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[240px]">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_FILTERS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -162,6 +267,7 @@ export default function EmailTemplatesPage() {
                   <SerialNumberHead />
                   <TableHead>Template</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>When sent</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Updated</TableHead>
                   <TableHead className="w-24" />
@@ -170,17 +276,19 @@ export default function EmailTemplatesPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
                 ) : paginatedTemplates.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
-                      No templates found
+                      {templates.length === 0
+                        ? "No templates found. Click “Sync missing templates” to load platform defaults."
+                        : "No templates match this filter."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -192,19 +300,24 @@ export default function EmailTemplatesPage() {
                       />
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Mail className="size-4 text-muted-foreground" />
+                          <Mail className="size-4 text-muted-foreground shrink-0" />
                           <div>
                             <p className="font-medium">
                               {template.name || template.slug}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground font-mono">
                               {template.slug}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="capitalize">
-                        {template.category || "—"}
+                        {template.slug.startsWith("subscription_")
+                          ? "subscription"
+                          : template.category || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[280px] text-sm text-muted-foreground">
+                        {template.triggerDescription || "—"}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -325,6 +438,11 @@ export default function EmailTemplatesPage() {
             <DialogTitle>
               Edit template — {editing?.name || editing?.slug}
             </DialogTitle>
+            {editing?.triggerDescription ? (
+              <p className="text-sm text-muted-foreground">
+                {editing.triggerDescription}
+              </p>
+            ) : null}
           </DialogHeader>
           {loadingTemplate ? (
             <div className="flex items-center justify-center py-12">
@@ -332,6 +450,26 @@ export default function EmailTemplatesPage() {
             </div>
           ) : (
             <div className="space-y-4 py-2">
+              {variableHints.length > 0 ? (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-sm font-medium">Available variables</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Insert these in subject or body as{" "}
+                    <code className="font-mono">{`{{VariableName}}`}</code>
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {variableHints.map((variable) => (
+                      <Badge
+                        key={variable}
+                        variant="outline"
+                        className="font-mono text-xs"
+                      >
+                        {`{{${variable}}}`}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label>Subject</Label>
                 <Input

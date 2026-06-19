@@ -398,6 +398,13 @@ export const adminApi = {
   getEmailTemplates: () =>
     apiRequest<EmailTemplateSummary[]>("admin/email-templates"),
 
+  syncEmailTemplates: () =>
+    apiRequest<{
+      inserted: number;
+      totalDefaults: number;
+      totalInDatabase: number;
+    }>("admin/email-templates/sync-defaults", { method: "POST" }),
+
   getEmailTemplate: (slug: string) =>
     apiRequest<EmailTemplate>(`admin/email-templates/${slug}`),
 

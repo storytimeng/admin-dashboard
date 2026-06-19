@@ -572,6 +572,7 @@ export interface EmailTemplate {
   isActive?: boolean;
   category?: string;
   triggerDescription?: string;
+  variableHints?: string[];
   updatedAt?: string;
 }
 
@@ -581,6 +582,7 @@ export interface EmailTemplateSummary {
   category?: string;
   isActive?: boolean;
   triggerDescription?: string;
+  variableHints?: string[];
   updatedAt?: string;
 }
 
