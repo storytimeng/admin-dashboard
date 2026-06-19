@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { adminApi } from "@/lib/api/admin";
+import { moderationActionMessage } from "@/lib/moderation-action-message";
 
 function StatCard({
   label,
@@ -86,7 +87,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         router.push("/users");
         return;
       }
-      toast.success(`User ${confirmAction}ed`);
+      toast.success(moderationActionMessage("User", confirmAction));
       await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Action failed");

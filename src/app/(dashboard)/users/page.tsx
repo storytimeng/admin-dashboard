@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api/admin";
+import { moderationActionMessage } from "@/lib/moderation-action-message";
 import type { AppUser } from "@/types/admin";
 import { formatDistanceToNow } from "date-fns";
 
@@ -80,7 +81,7 @@ export default function UsersPage() {
       if (action === "suspend") await adminApi.suspendUser(user.id);
       if (action === "unsuspend") await adminApi.unsuspendUser(user.id);
       if (action === "delete") await adminApi.deleteUser(user.id);
-      toast.success(`User ${action === "delete" ? "removed" : action + "ed"}`);
+      toast.success(moderationActionMessage("User", action));
       await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Action failed");

@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { adminApi } from "@/lib/api/admin";
+import { moderationActionMessage } from "@/lib/moderation-action-message";
 import type { AdminStoryDetail, StoryCommentDetail } from "@/types/admin";
 import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
 import { useState } from "react";
@@ -29,7 +30,9 @@ import { useState } from "react";
 function HtmlBlock({ html, label }: { html?: string | null; label: string }) {
   if (!html?.trim()) {
     return (
-      <p className="text-sm text-muted-foreground italic">No {label} provided.</p>
+      <p className="text-sm text-muted-foreground italic">
+        No {label} provided.
+      </p>
     );
   }
   return (
@@ -51,7 +54,13 @@ function MetaItem({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function CommentRow({ comment, depth = 0 }: { comment: StoryCommentDetail; depth?: number }) {
+function CommentRow({
+  comment,
+  depth = 0,
+}: {
+  comment: StoryCommentDetail;
+  depth?: number;
+}) {
   return (
     <div className={depth > 0 ? "ml-6 border-l pl-4 mt-3" : "mt-3 first:mt-0"}>
       <div className="rounded-lg border bg-muted/30 p-3">
@@ -82,10 +91,12 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const { data: story, isLoading, error, mutate } = useSWR(
-    ["story-detail", storyId],
-    () => adminApi.getStory(storyId),
-  );
+  const {
+    data: story,
+    isLoading,
+    error,
+    mutate,
+  } = useSWR(["story-detail", storyId], () => adminApi.getStory(storyId));
 
   const { data: chapters } = useSWR(["story-chapters", storyId], () =>
     adminApi.getStoryChapters(storyId),
@@ -112,7 +123,11 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
         router.push("/stories");
         return;
       }
-      toast.success(`Story ${confirmAction}ed`);
+      toast.success(
+        moderationActionMessage("Story", confirmAction, {
+          deletePastTense: "deleted",
+        }),
+      );
       await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Action failed");
@@ -202,17 +217,19 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
         <Badge variant="outline" className="capitalize">
           {story.storyStatus || "unknown"}
         </Badge>
-        {story.isSuspended ? <Badge variant="destructive">Suspended</Badge> : null}
+        {story.isSuspended ? (
+          <Badge variant="destructive">Suspended</Badge>
+        ) : null}
         {story.onlyOnStorytime ? (
           <Badge variant="secondary">Storytime Exclusive</Badge>
         ) : null}
         {story.anonymous ? <Badge variant="secondary">Anonymous</Badge> : null}
-        {story.trigger ? <Badge variant="destructive">18+ Trigger</Badge> : null}
+        {story.trigger ? (
+          <Badge variant="destructive">18+ Trigger</Badge>
+        ) : null}
         {story.copyright ? <Badge variant="outline">Copyright</Badge> : null}
         {story.chapter ? <Badge variant="outline">Chapters</Badge> : null}
-        {episodes?.length ? (
-          <Badge variant="outline">Episodes</Badge>
-        ) : null}
+        {episodes?.length ? <Badge variant="outline">Episodes</Badge> : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
@@ -251,7 +268,9 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
             ) : null}
             <MetaItem
               label="Language"
-              value={<span className="capitalize">{story.language || "—"}</span>}
+              value={
+                <span className="capitalize">{story.language || "—"}</span>
+              }
             />
             <MetaItem
               label="Created"
@@ -329,16 +348,16 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
         <TabsList>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="description">Description</TabsTrigger>
-        {story.chapter && chapters?.length ? (
-          <TabsTrigger value="chapters">
-            Chapters ({chapters.length})
-          </TabsTrigger>
-        ) : null}
-        {episodes?.length ? (
-          <TabsTrigger value="episodes">
-            Episodes ({episodes.length})
-          </TabsTrigger>
-        ) : null}
+          {story.chapter && chapters?.length ? (
+            <TabsTrigger value="chapters">
+              Chapters ({chapters.length})
+            </TabsTrigger>
+          ) : null}
+          {episodes?.length ? (
+            <TabsTrigger value="episodes">
+              Episodes ({episodes.length})
+            </TabsTrigger>
+          ) : null}
           <TabsTrigger value="comments">
             Comments ({comments?.length ?? story.commentCount ?? 0})
           </TabsTrigger>
@@ -424,9 +443,7 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
               ? "Suspend"
               : "Unsuspend"
         }
-        destructive={
-          confirmAction === "delete" || confirmAction === "suspend"
-        }
+        destructive={confirmAction === "delete" || confirmAction === "suspend"}
         loading={actionLoading}
         onConfirm={runAction}
       />

@@ -40,6 +40,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api/admin";
+import { moderationActionMessage } from "@/lib/moderation-action-message";
 import type { AdminRole, AdminUser } from "@/types/admin";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 
@@ -118,7 +119,11 @@ export default function AdminsPage() {
       if (action === "suspend") await adminApi.suspendAdmin(admin.id);
       if (action === "unsuspend") await adminApi.unsuspendAdmin(admin.id);
       if (action === "delete") await adminApi.deleteAdmin(admin.id);
-      toast.success(`Admin ${action}${action === "delete" ? "d" : "ed"}`);
+      toast.success(
+        moderationActionMessage("Admin", action, {
+          deletePastTense: "deleted",
+        }),
+      );
       await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Action failed");

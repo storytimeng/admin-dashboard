@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api/admin";
+import { moderationActionMessage } from "@/lib/moderation-action-message";
 import type { AdminStory } from "@/types/admin";
 import { formatDistanceToNow } from "date-fns";
 import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
@@ -80,7 +81,11 @@ export default function StoriesPage() {
       if (action === "suspend") await adminApi.suspendStory(story.id);
       if (action === "unsuspend") await adminApi.unsuspendStory(story.id);
       if (action === "delete") await adminApi.deleteStory(story.id);
-      toast.success(`Story ${action === "delete" ? "deleted" : action + "ed"}`);
+      toast.success(
+        moderationActionMessage("Story", action, {
+          deletePastTense: "deleted",
+        }),
+      );
       await mutate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Action failed");
