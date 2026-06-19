@@ -3,11 +3,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -16,54 +11,70 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  NotificationComposer,
+  type NotificationComposerValues,
+} from "@/components/notifications/notification-composer";
 import { adminApi } from "@/lib/api/admin";
+import { stripHtml } from "@/lib/notification-html";
+
+const emptySingle: NotificationComposerValues = {
+  title: "",
+  message: "",
+  email: "",
+  sendEmail: false,
+};
+
+const emptyBulk: NotificationComposerValues = {
+  title: "",
+  message: "",
+  sendEmail: true,
+};
 
 export default function NotificationsPage() {
-  const [single, setSingle] = useState({
-    title: "",
-    message: "",
-    email: "",
-    sendEmail: false,
-  });
-  const [bulk, setBulk] = useState({
-    title: "",
-    message: "",
-    sendEmail: true,
-  });
-  const [loading, setLoading] = useState(false);
+  const [single, setSingle] = useState<NotificationComposerValues>(emptySingle);
+  const [bulk, setBulk] = useState<NotificationComposerValues>(emptyBulk);
+  const [loadingSingle, setLoadingSingle] = useState(false);
+  const [loadingBulk, setLoadingBulk] = useState(false);
 
   const sendSingle = async () => {
-    if (!single.title || !single.message) {
+    if (!single.title.trim() || !stripHtml(single.message)) {
       toast.error("Title and message are required");
       return;
     }
-    setLoading(true);
+    if (!single.email?.trim()) {
+      toast.error("User email is required");
+      return;
+    }
+
+    setLoadingSingle(true);
     try {
       await adminApi.sendNotification({
-        title: single.title,
+        title: single.title.trim(),
         message: single.message,
         type: "admin_message",
-        email: single.email || undefined,
+        email: single.email.trim(),
         sendEmail: single.sendEmail,
       });
       toast.success("Notification sent");
-      setSingle({ title: "", message: "", email: "", sendEmail: false });
+      setSingle(emptySingle);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Send failed");
     } finally {
-      setLoading(false);
+      setLoadingSingle(false);
     }
   };
 
   const sendBulk = async () => {
-    if (!bulk.title || !bulk.message) {
+    if (!bulk.title.trim() || !stripHtml(bulk.message)) {
       toast.error("Title and message are required");
       return;
     }
-    setLoading(true);
+
+    setLoadingBulk(true);
     try {
       const result = await adminApi.sendBulkNotification({
-        title: bulk.title,
+        title: bulk.title.trim(),
         message: bulk.message,
         type: "admin_message",
         sendEmail: bulk.sendEmail,
@@ -71,11 +82,11 @@ export default function NotificationsPage() {
       toast.success(
         `Sent to ${result.created} users (${result.failed} failed)`,
       );
-      setBulk({ title: "", message: "", sendEmail: true });
+      setBulk(emptyBulk);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Bulk send failed");
     } finally {
-      setLoading(false);
+      setLoadingBulk(false);
     }
   };
 
@@ -83,7 +94,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        description="Send in-app and email notifications to users."
+        description="Compose rich announcements with preview, then send in-app notifications and optional email delivery."
       />
 
       <Tabs defaultValue="bulk">
@@ -96,41 +107,18 @@ export default function NotificationsPage() {
             <CardHeader>
               <CardTitle>Broadcast to all users</CardTitle>
               <CardDescription>
-                Sends an in-app notification to every active user.
+                Sends an in-app notification to every active user. Preview
+                before sending to check formatting in the app and inbox.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 max-w-xl">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  value={bulk.title}
-                  onChange={(e) =>
-                    setBulk((b) => ({ ...b, title: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Message</Label>
-                <Textarea
-                  rows={4}
-                  value={bulk.message}
-                  onChange={(e) =>
-                    setBulk((b) => ({ ...b, message: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={bulk.sendEmail}
-                  onCheckedChange={(v) =>
-                    setBulk((b) => ({ ...b, sendEmail: v }))
-                  }
-                />
-                <Label>Also send email</Label>
-              </div>
-              <Button onClick={sendBulk} disabled={loading}>
-                {loading ? "Sending…" : "Send broadcast"}
-              </Button>
+            <CardContent>
+              <NotificationComposer
+                values={bulk}
+                onChange={setBulk}
+                onSubmit={sendBulk}
+                loading={loadingBulk}
+                submitLabel="Send broadcast"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -138,50 +126,20 @@ export default function NotificationsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Target one user</CardTitle>
-              <CardDescription>Send by user email address.</CardDescription>
+              <CardDescription>
+                Send a rich notification to a specific user by email address.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 max-w-xl">
-              <div className="space-y-2">
-                <Label>User email</Label>
-                <Input
-                  type="email"
-                  value={single.email}
-                  onChange={(e) =>
-                    setSingle((s) => ({ ...s, email: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  value={single.title}
-                  onChange={(e) =>
-                    setSingle((s) => ({ ...s, title: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Message</Label>
-                <Textarea
-                  rows={4}
-                  value={single.message}
-                  onChange={(e) =>
-                    setSingle((s) => ({ ...s, message: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={single.sendEmail}
-                  onCheckedChange={(v) =>
-                    setSingle((s) => ({ ...s, sendEmail: v }))
-                  }
-                />
-                <Label>Also send email</Label>
-              </div>
-              <Button onClick={sendSingle} disabled={loading}>
-                {loading ? "Sending…" : "Send notification"}
-              </Button>
+            <CardContent>
+              <NotificationComposer
+                values={single}
+                onChange={setSingle}
+                onSubmit={sendSingle}
+                loading={loadingSingle}
+                submitLabel="Send notification"
+                showEmailField
+                emailDescription="Must match a registered Storytime account."
+              />
             </CardContent>
           </Card>
         </TabsContent>
