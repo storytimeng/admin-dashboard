@@ -78,11 +78,14 @@ async function proxyRequest(
   });
 
   try {
+    const isAnalytics = apiPath.startsWith("admin/analytics");
+    const timeoutMs = isAnalytics ? 60000 : 30000;
+
     const response = await fetch(fullUrl, {
       method,
       headers,
       body,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     const responseData = await response.text();

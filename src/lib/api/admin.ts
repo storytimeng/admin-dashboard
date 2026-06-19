@@ -12,6 +12,7 @@ import type {
   EmailTemplate,
   EmailTemplateSummary,
   FaqItem,
+  DashboardAnalytics,
   PaymentAuditLog,
   PaymentRecord,
   ReportsOverview,
@@ -41,6 +42,11 @@ export const adminApi = {
   getReportsOverview: () =>
     apiRequest<{ message: string; report: ReportsOverview }>(
       "admin/reports/overview",
+    ),
+
+  getDashboardAnalytics: (days = 30) =>
+    apiRequest<{ message: string; analytics: DashboardAnalytics }>(
+      `admin/analytics/dashboard?days=${days}`,
     ),
 
   getUsers: () =>

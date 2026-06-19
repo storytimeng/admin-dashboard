@@ -34,7 +34,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
-import type { PolicyType, TermsItem } from "@/types/admin";
+import type { TermsFormType, TermsItem } from "@/types/admin";
+import {
+  isLegacyPolicyType,
+  isSupportedPolicyType,
+  POLICY_TYPE_LABELS,
+} from "@/types/admin";
 
 export default function TermsPage() {
   const { data, isLoading, mutate } = useSWR("terms", () =>
@@ -45,7 +50,7 @@ export default function TermsPage() {
   const [form, setForm] = useState<{
     title: string;
     content: string;
-    type: PolicyType;
+    type: TermsFormType;
   }>({
     title: "",
     content: "",
@@ -60,30 +65,45 @@ export default function TermsPage() {
   };
 
   const openEdit = (item: TermsItem) => {
+    const itemType = item.type ?? "terms";
     setEditing(item);
     setForm({
       title: item.title,
       content: item.content,
-      type: item.type === "privacy" ? "privacy" : "terms",
+      type: itemType,
     });
+    if (isLegacyPolicyType(itemType)) {
+      toast.warning(
+        `"${POLICY_TYPE_LABELS[itemType]}" is no longer supported. Choose Terms of Service or Privacy Policy before saving.`,
+      );
+    }
     setOpen(true);
   };
 
   const save = async () => {
-    if (form.title.trim().length < 5) {
+    const title = form.title.trim();
+    const content = form.content.trim();
+
+    if (title.length < 5) {
       toast.error("Title must be at least 5 characters");
       return;
     }
-    if (form.content.trim().length < 50) {
+    if (content.length < 50) {
       toast.error("Content must be at least 50 characters");
+      return;
+    }
+    if (!isSupportedPolicyType(form.type)) {
+      toast.error(
+        "Choose Terms of Service or Privacy Policy before saving. Legacy policy types cannot be saved.",
+      );
       return;
     }
 
     setSaving(true);
     try {
       const payload = {
-        title: form.title.trim(),
-        content: form.content,
+        title,
+        content,
         type: form.type,
       };
       if (editing) await adminApi.updateTerms(editing.id, payload);
@@ -134,7 +154,9 @@ export default function TermsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">
-                      {item.type || "terms"}
+                      {item.type
+                        ? (POLICY_TYPE_LABELS[item.type] ?? item.type)
+                        : "Terms of Service"}
                     </Badge>
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
@@ -187,16 +209,27 @@ export default function TermsPage() {
             </div>
             <div className="space-y-2">
               <Label>Type</Label>
+              {isLegacyPolicyType(form.type) ? (
+                <p className="text-xs text-amber-600">
+                  This document uses a legacy type. Select Terms of Service or
+                  Privacy Policy to migrate it before saving.
+                </p>
+              ) : null}
               <Select
                 value={form.type}
                 onValueChange={(v) =>
-                  v && setForm((f) => ({ ...f, type: v as PolicyType }))
+                  v && setForm((f) => ({ ...f, type: v as TermsFormType }))
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {isLegacyPolicyType(form.type) ? (
+                    <SelectItem value={form.type} disabled>
+                      {POLICY_TYPE_LABELS[form.type]}
+                    </SelectItem>
+                  ) : null}
                   <SelectItem value="terms">Terms of Service</SelectItem>
                   <SelectItem value="privacy">Privacy Policy</SelectItem>
                 </SelectContent>

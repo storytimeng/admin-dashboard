@@ -196,6 +196,132 @@ export interface SubscriptionOverview {
   }>;
 }
 
+export interface DashboardAnalytics {
+  generatedAt: string;
+  trendDays: number;
+  summary: {
+    users: {
+      total: number;
+      active: number;
+      suspended: number;
+      deleted: number;
+      verified: number;
+      premium: number;
+      newLast7Days: number;
+      newLast30Days: number;
+      activeLast7Days: number;
+    };
+    stories: {
+      total: number;
+      active: number;
+      suspended: number;
+      complete: number;
+      ongoing: number;
+      drafts: number;
+      exclusive: number;
+      anonymous: number;
+      triggerContent: number;
+      newLast7Days: number;
+      newLast30Days: number;
+    };
+    engagement: {
+      totalReads: number;
+      readsLast7Days: number;
+      readsLast30Days: number;
+      totalLikes: number;
+      totalComments: number;
+      storyComments: number;
+      episodeComments: number;
+      chapterComments: number;
+      chapters: number;
+      episodes: number;
+      notifications: number;
+    };
+    subscriptions: {
+      totalPayments: number;
+      successfulPayments: number;
+      pendingPayments: number;
+      failedPayments: number;
+      activeSubscriptions: number;
+      expiredSubscriptions: number;
+      cancelledSubscriptions: number;
+      pendingSubscriptions: number;
+      premiumUsers: number;
+      premiumConversionRate: number;
+      paymentSuccessRate: number;
+      revenueByCurrency: Array<{
+        currency: string;
+        totalMinor: number;
+        formatted: string;
+      }>;
+      revenueLast30Days: Array<{
+        currency: string;
+        totalMinor: number;
+        formatted: string;
+      }>;
+    };
+    derived: {
+      avgReadsPerStory: number;
+      commentsPerStory: number;
+      likesPerStory: number;
+    };
+  };
+  storyStatusBreakdown: Array<{ status: string; count: number }>;
+  contentFormat: {
+    chapterStories: number;
+    episodeStories: number;
+    standalone: number;
+  };
+  genreBreakdown: Array<{ genre: string; count: number }>;
+  trends: {
+    userSignups: Array<{ date: string; count: number }>;
+    reads: Array<{ date: string; count: number }>;
+    revenue: Array<{
+      date: string;
+      currency: string;
+      amountMinor: number;
+      formatted: string;
+    }>;
+  };
+  topStories: Array<{
+    id: string;
+    title: string;
+    storyStatus: string;
+    authorPenName: string | null;
+    reads: number;
+    likes: number;
+    comments: number;
+    popularityScore: number | null;
+  }>;
+  topAuthors: Array<{
+    authorId: string;
+    penName: string | null;
+    email: string;
+    storyCount: number;
+    totalReads: number;
+  }>;
+  recentUsers: Array<{
+    id: string;
+    email: string;
+    penName: string | null;
+    isPremium: boolean;
+    createdAt: string;
+  }>;
+  recentStories: Array<{
+    id: string;
+    title: string;
+    storyStatus: string;
+    authorPenName: string | null;
+    isSuspended: boolean;
+    createdAt: string;
+  }>;
+  alerts: Array<{
+    type: "warning" | "info" | "danger";
+    label: string;
+    count: number;
+  }>;
+}
+
 export interface PaymentRecord {
   id: string;
   reference: string;
@@ -248,12 +374,33 @@ export interface SupportItem {
 }
 
 export type PolicyType = "terms" | "privacy";
+export type LegacyPolicyType = "cookie" | "other";
+export type TermsFormType = PolicyType | LegacyPolicyType;
+
+export function isSupportedPolicyType(
+  type: string | undefined,
+): type is PolicyType {
+  return type === "terms" || type === "privacy";
+}
+
+export function isLegacyPolicyType(
+  type: string | undefined,
+): type is LegacyPolicyType {
+  return type === "cookie" || type === "other";
+}
+
+export const POLICY_TYPE_LABELS: Record<TermsFormType, string> = {
+  terms: "Terms of Service",
+  privacy: "Privacy Policy",
+  cookie: "Cookie Policy (legacy)",
+  other: "Other (legacy)",
+};
 
 export interface TermsItem {
   id: string;
   title: string;
   content: string;
-  type?: PolicyType;
+  type?: TermsFormType;
   version?: string | null;
   isActive?: boolean;
   createdAt?: string;
