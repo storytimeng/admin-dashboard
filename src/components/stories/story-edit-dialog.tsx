@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminStory } from "@/types/admin";
 
@@ -98,7 +98,7 @@ export function StoryEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit story</DialogTitle>
         </DialogHeader>
@@ -114,23 +114,22 @@ export function StoryEditDialog({
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea
-              rows={3}
+            <RichTextEditor
               value={form.description}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
+              onChange={(description) =>
+                setForm((f) => ({ ...f, description }))
               }
+              placeholder="Short description or synopsis…"
+              minHeight="min-h-[120px]"
             />
           </div>
           <div className="space-y-2">
             <Label>Content</Label>
-            <Textarea
-              rows={10}
-              className="font-mono text-sm"
+            <RichTextEditor
               value={form.content}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, content: e.target.value }))
-              }
+              onChange={(content) => setForm((f) => ({ ...f, content }))}
+              placeholder="Story body…"
+              minHeight="min-h-[280px]"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

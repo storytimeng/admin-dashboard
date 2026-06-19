@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { SupportItem } from "@/types/admin";
 
@@ -131,7 +131,7 @@ export default function SupportPage() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Edit" : "Create"} support article
@@ -149,12 +149,10 @@ export default function SupportPage() {
             </div>
             <div className="space-y-2">
               <Label>Content</Label>
-              <Textarea
-                rows={8}
+              <RichTextEditor
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(content) => setForm((f) => ({ ...f, content }))}
+                minHeight="min-h-[280px]"
               />
             </div>
           </div>

@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { FaqItem } from "@/types/admin";
 
@@ -36,6 +36,7 @@ function ContentCrudPage({
   createFn,
   updateFn,
   deleteFn,
+  contentLabel,
 }: {
   title: string;
   description: string;
@@ -44,6 +45,7 @@ function ContentCrudPage({
   createFn: (data: Partial<FaqItem>) => Promise<FaqItem>;
   updateFn: (id: string, data: Partial<FaqItem>) => Promise<FaqItem>;
   deleteFn: (id: string) => Promise<unknown>;
+  contentLabel: string;
 }) {
   const { data, isLoading, mutate } = useSWR(fetchKey, fetchFn);
   const [open, setOpen] = useState(false);
@@ -154,7 +156,7 @@ function ContentCrudPage({
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit" : "Create"}</DialogTitle>
           </DialogHeader>
@@ -169,13 +171,11 @@ function ContentCrudPage({
               />
             </div>
             <div className="space-y-2">
-              <Label>Content / Answer</Label>
-              <Textarea
-                rows={6}
+              <Label>{contentLabel}</Label>
+              <RichTextEditor
                 value={form.answer}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, answer: e.target.value }))
-                }
+                onChange={(answer) => setForm((f) => ({ ...f, answer }))}
+                minHeight="min-h-[220px]"
               />
             </div>
           </div>
@@ -203,6 +203,7 @@ export default function FaqsPage() {
       createFn={(d) => adminApi.createFaq(d)}
       updateFn={(id, d) => adminApi.updateFaq(id, d)}
       deleteFn={(id) => adminApi.deleteFaq(id)}
+      contentLabel="Answer"
     />
   );
 }

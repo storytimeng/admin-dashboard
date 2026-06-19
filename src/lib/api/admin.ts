@@ -7,8 +7,11 @@ import type {
   AdminStory,
   AdminUser,
   AppUser,
+  EmailDeliveryLog,
   EmailTemplate,
+  EmailTemplateSummary,
   FaqItem,
+  PaymentAuditLog,
   PaymentRecord,
   ReportsOverview,
   SubscriptionOverview,
@@ -28,10 +31,13 @@ export const adminApi = {
   logout: () =>
     apiRequest<{ message: string }>("auth/logout", { method: "POST" }),
 
-  getProfile: () => apiRequest<AdminUser>("admin/profile"),
+  getProfile: () =>
+    apiRequest<{ message: string; admin: AdminUser }>("admin/profile"),
 
   getReportsOverview: () =>
-    apiRequest<{ report: ReportsOverview }>("admin/reports/overview"),
+    apiRequest<{ message: string; report: ReportsOverview }>(
+      "admin/reports/overview",
+    ),
 
   getUsers: () =>
     apiRequest<{ message: string; count: number; users: AppUser[] }>(
@@ -71,7 +77,7 @@ export const adminApi = {
   },
 
   updateStory: (id: string, data: Partial<AdminStory>) =>
-    apiRequest<AdminStory>(`admin/stories/${id}`, {
+    apiRequest<{ message: string; story: AdminStory }>(`admin/stories/${id}`, {
       method: "PATCH",
       body: data,
     }),
@@ -129,7 +135,15 @@ export const adminApi = {
       method: "DELETE",
     }),
 
-  getAdmins: () => apiRequest<AdminUser[]>("admin"),
+  getAdmins: async () => {
+    const result = await apiRequest<
+      { message: string; count: number; admins: AdminUser[] } | AdminUser[]
+    >("admin");
+    return Array.isArray(result) ? result : (result.admins ?? []);
+  },
+
+  getAdmin: (id: string) =>
+    apiRequest<{ message: string; admin: AdminUser }>(`admin/${id}`),
 
   createAdmin: (data: {
     firstName: string;
@@ -137,10 +151,20 @@ export const adminApi = {
     email: string;
     password: string;
     role: string;
-  }) => apiRequest<AdminUser>("admin", { method: "POST", body: data }),
+  }) =>
+    apiRequest<{ message: string; admin: AdminUser }>("admin", {
+      method: "POST",
+      body: data,
+    }),
 
-  updateAdmin: (id: string, data: Partial<AdminUser>) =>
-    apiRequest<AdminUser>(`admin/${id}`, { method: "PATCH", body: data }),
+  updateAdmin: (
+    id: string,
+    data: Partial<Pick<AdminUser, "firstName" | "lastName" | "email" | "role">>,
+  ) =>
+    apiRequest<{ message: string; admin: AdminUser }>(`admin/${id}`, {
+      method: "PATCH",
+      body: data,
+    }),
 
   suspendAdmin: (id: string) =>
     apiRequest<{ message: string }>(`admin/${id}/suspend`, { method: "PATCH" }),
@@ -219,7 +243,22 @@ export const adminApi = {
     }>(`admin/subscriptions/records${qs ? `?${qs}` : ""}`);
   },
 
-  getEmailTemplates: () => apiRequest<EmailTemplate[]>("admin/email-templates"),
+  getSubscriptionAuditLogs: (params?: { page?: number; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    const qs = search.toString();
+    return apiRequest<{
+      items: PaymentAuditLog[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`admin/subscriptions/audit-logs${qs ? `?${qs}` : ""}`);
+  },
+
+  getEmailTemplates: () =>
+    apiRequest<EmailTemplateSummary[]>("admin/email-templates"),
 
   getEmailTemplate: (slug: string) =>
     apiRequest<EmailTemplate>(`admin/email-templates/${slug}`),
@@ -234,6 +273,27 @@ export const adminApi = {
       method: "PUT",
       body: data,
     }),
+
+  previewEmailTemplate: (slug: string, variables?: Record<string, string>) =>
+    apiRequest<{ subject: string; html: string; text?: string }>(
+      `admin/email-templates/${slug}/preview`,
+      { method: "POST", body: { variables: variables ?? {} } },
+    ),
+
+  getEmailDeliveryLogs: (params?: {
+    page?: number;
+    limit?: number;
+    templateSlug?: string;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.page) search.set("page", String(params.page));
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.templateSlug) search.set("templateSlug", params.templateSlug);
+    const qs = search.toString();
+    return apiRequest<{ data: EmailDeliveryLog[]; total: number }>(
+      `admin/email-templates/delivery-logs${qs ? `?${qs}` : ""}`,
+    );
+  },
 
   getFaqs: () => apiRequest<FaqItem[]>("faqs/admin/all"),
 

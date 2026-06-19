@@ -128,3 +128,32 @@
     @apply font-sans;
   }
 }
+
+/* Rich text editor / story content preview */
+.admin-rich-text {
+  @apply text-sm leading-relaxed;
+}
+.admin-rich-text p {
+  @apply mb-3 last:mb-0;
+}
+.admin-rich-text h2 {
+  @apply mb-2 mt-4 text-lg font-semibold first:mt-0;
+}
+.admin-rich-text h3 {
+  @apply mb-2 mt-3 text-base font-semibold first:mt-0;
+}
+.admin-rich-text ul {
+  @apply mb-3 list-disc pl-5;
+}
+.admin-rich-text ol {
+  @apply mb-3 list-decimal pl-5;
+}
+.admin-rich-text blockquote {
+  @apply mb-3 border-l-4 border-primary/40 pl-4 italic text-muted-foreground;
+}
+.admin-rich-text a {
+  @apply text-primary underline underline-offset-2;
+}
+.admin-rich-text strong {
+  @apply font-semibold;
+}

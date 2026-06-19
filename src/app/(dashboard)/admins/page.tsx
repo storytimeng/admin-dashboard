@@ -52,6 +52,9 @@ export default function AdminsPage() {
     adminApi.getAdmins(),
   );
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
+  const [editRole, setEditRole] = useState<AdminRole>("admin");
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -103,6 +106,24 @@ export default function AdminsPage() {
       toast.error(err instanceof Error ? err.message : "Action failed");
     } finally {
       setConfirm(null);
+    }
+  };
+
+  const openEditRole = (admin: AdminUser) => {
+    setEditingAdmin(admin);
+    setEditRole(admin.role);
+    setEditOpen(true);
+  };
+
+  const saveRole = async () => {
+    if (!editingAdmin) return;
+    try {
+      await adminApi.updateAdmin(editingAdmin.id, { role: editRole });
+      toast.success("Role updated");
+      setEditOpen(false);
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Update failed");
     }
   };
 
@@ -160,6 +181,13 @@ export default function AdminsPage() {
                   </TableCell>
                   {isSuperAdmin ? (
                     <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditRole(admin)}
+                      >
+                        Edit role
+                      </Button>
                       {admin.isSuspended ? (
                         <Button
                           size="sm"
@@ -271,6 +299,44 @@ export default function AdminsPage() {
             <Button onClick={handleInvite} disabled={submitting}>
               {submitting ? "Creating…" : "Create admin"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change admin role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              {editingAdmin?.firstName} {editingAdmin?.lastName} (
+              {editingAdmin?.email})
+            </p>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select
+                value={editRole}
+                onValueChange={(v) => v && setEditRole(v as AdminRole)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r} value={r} className="capitalize">
+                      {r.replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveRole}>Save role</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

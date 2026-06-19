@@ -194,4 +194,36 @@ export interface EmailTemplate {
   bodyHtml: string;
   bodyText?: string;
   isActive?: boolean;
+  category?: string;
+  triggerDescription?: string;
+  updatedAt?: string;
+}
+
+export interface EmailTemplateSummary {
+  slug: string;
+  name?: string;
+  category?: string;
+  isActive?: boolean;
+  triggerDescription?: string;
+  updatedAt?: string;
+}
+
+export interface PaymentAuditLog {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  userId?: string;
+  actor?: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface EmailDeliveryLog {
+  id: string;
+  templateSlug?: string;
+  recipientEmail?: string;
+  status?: string;
+  errorMessage?: string | null;
+  createdAt: string;
 }

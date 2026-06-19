@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -33,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { TermsItem } from "@/types/admin";
 
@@ -186,12 +186,10 @@ export default function TermsPage() {
             </div>
             <div className="space-y-2">
               <Label>Content</Label>
-              <Textarea
-                rows={12}
+              <RichTextEditor
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(content) => setForm((f) => ({ ...f, content }))}
+                minHeight="min-h-[320px]"
               />
             </div>
           </div>

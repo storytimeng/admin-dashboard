@@ -29,6 +29,10 @@ export default function SubscriptionsPage() {
     "subs-records",
     () => adminApi.getSubscriptionRecords({ page: 1, limit: 50 }),
   );
+  const { data: auditLogs, isLoading: auditLoading } = useSWR(
+    "subs-audit-logs",
+    () => adminApi.getSubscriptionAuditLogs({ page: 1, limit: 50 }),
+  );
 
   return (
     <div className="space-y-6">
@@ -62,6 +66,7 @@ export default function SubscriptionsPage() {
         <TabsList>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="audit">Audit trail</TabsTrigger>
         </TabsList>
         <TabsContent value="payments" className="mt-4">
           <div className="rounded-xl border overflow-x-auto">
@@ -153,6 +158,66 @@ export default function SubscriptionsPage() {
                       </TableCell>
                     </TableRow>
                   ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+        <TabsContent value="audit" className="mt-4">
+          <div className="rounded-xl border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>When</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <Skeleton className="h-8 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ) : auditLogs?.items?.length ? (
+                  auditLogs.items.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {log.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {log.entityType}
+                        {log.entityId ? (
+                          <span className="block font-mono text-xs text-muted-foreground truncate max-w-[180px]">
+                            {log.entityId}
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="capitalize text-sm">
+                        {log.actor || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {log.createdAt
+                          ? formatDistanceToNow(new Date(log.createdAt), {
+                              addSuffix: true,
+                            })
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No audit events yet
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
