@@ -47,16 +47,20 @@ const STATUS_TABS: Array<{
   { value: "declined", label: "Declined" },
 ];
 
-function statusVariant(status: AmbassadorApplicationStatus) {
+function statusVariant(
+  status: AmbassadorApplicationStatus,
+): "secondary" | "default" | "destructive" {
   switch (status) {
     case "pending":
-      return "secondary" as const;
+      return "secondary";
     case "accepted":
-      return "default" as const;
+      return "default";
     case "declined":
-      return "destructive" as const;
-    default:
-      return "outline" as const;
+      return "destructive";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
   }
 }
 
