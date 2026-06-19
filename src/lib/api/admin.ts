@@ -172,11 +172,20 @@ export const adminApi = {
       method: "DELETE",
     }),
 
-  getComments: (type?: AdminCommentType) => {
+  getComments: async (type?: AdminCommentType) => {
     const qs = type ? `?type=${type}` : "";
-    return apiRequest<{ comments: AdminComment[]; count: number }>(
-      `admin/comments${qs}`,
-    );
+    const response = await apiRequest<{
+      comments?: AdminComment[];
+      count?: number;
+      total?: number;
+      breakdown?: { story: number; episode: number; chapter: number };
+    }>(`admin/comments${qs}`);
+    const comments = response.comments ?? [];
+    return {
+      comments,
+      count: response.count ?? response.total ?? comments.length,
+      breakdown: response.breakdown,
+    };
   },
 
   getComment: (type: AdminCommentType, id: string) =>

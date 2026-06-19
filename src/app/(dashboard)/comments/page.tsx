@@ -39,7 +39,7 @@ function commentDetailHref(comment: AdminComment) {
 
 export default function CommentsPage() {
   const router = useRouter();
-  const { data, isLoading, mutate } = useSWR("admin-comments", () =>
+  const { data, isLoading, error, mutate } = useSWR("admin-comments", () =>
     adminApi.getComments(),
   );
 
@@ -113,6 +113,12 @@ export default function CommentsPage() {
         </TabsList>
 
         <TabsContent value={filter} className="mt-4 space-y-4">
+          {error ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              Could not load comments. Check your connection, permissions, and
+              that the backend is deployed with the latest admin API.
+            </div>
+          ) : null}
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
