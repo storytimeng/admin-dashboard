@@ -18,6 +18,7 @@ import {
 import { navItems } from "./nav-config";
 import { canAccessModule, useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { Badge } from "@/components/ui/badge";
+import { StorytimeLogo } from "@/components/brand/storytime-logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -30,13 +31,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            ST
-          </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold tracking-tight">Storytime</span>
-            <span className="text-xs text-muted-foreground">Admin Console</span>
+        <Link href="/" className="flex items-center gap-3 min-w-0">
+          <StorytimeLogo
+            size="sm"
+            className="shrink-0 group-data-[collapsible=icon]:mx-auto"
+          />
+          <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+            <span className="font-semibold tracking-tight truncate">
+              Storytime
+            </span>
+            <span className="text-xs text-muted-foreground truncate">
+              Admin Console
+            </span>
           </div>
         </Link>
       </SidebarHeader>

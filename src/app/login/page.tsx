@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { ApiError } from "@/lib/api/client";
+import { StorytimeLogo } from "@/components/brand/storytime-logo";
 
 function LoginForm() {
   const router = useRouter();
@@ -50,9 +51,7 @@ function LoginForm() {
   return (
     <Card className="relative w-full max-w-md border-white/10 bg-white/95 shadow-2xl backdrop-blur">
       <CardHeader className="space-y-3 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-[#F8951D] text-white font-bold">
-          ST
-        </div>
+        <StorytimeLogo size="lg" priority className="mx-auto justify-center" />
         <CardTitle className="text-2xl">Storytime Admin</CardTitle>
         <CardDescription>
           Sign in to manage stories, users, subscriptions, and operations.
@@ -119,7 +118,7 @@ function LoginFallback() {
   return (
     <Card className="relative w-full max-w-md border-white/10 bg-white/95 shadow-2xl backdrop-blur">
       <CardHeader className="space-y-3 text-center">
-        <Skeleton className="mx-auto size-12 rounded-xl" />
+        <Skeleton className="mx-auto h-16 w-12 rounded-md" />
         <Skeleton className="mx-auto h-8 w-48" />
         <Skeleton className="mx-auto h-4 w-64" />
       </CardHeader>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { STORYTIME_LOGO_SRC } from "@/components/brand/storytime-logo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Storytime Admin",
   description: "Operations console for Storytime",
+  icons: {
+    icon: [{ url: STORYTIME_LOGO_SRC, type: "image/png" }],
+    apple: [{ url: STORYTIME_LOGO_SRC, type: "image/png" }],
+    shortcut: STORYTIME_LOGO_SRC,
+  },
 };
 
 export default function RootLayout({
