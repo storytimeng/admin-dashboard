@@ -48,7 +48,7 @@ import {
 } from "@/types/admin";
 
 export default function TermsPage() {
-  const { data, isLoading, mutate } = useSWR("terms", () =>
+  const { data, isLoading, error, mutate } = useSWR("terms", () =>
     adminApi.getTerms(),
   );
   const [open, setOpen] = useState(false);
@@ -149,6 +149,14 @@ export default function TermsPage() {
           </Button>
         }
       />
+
+      {error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Could not load terms and policies. Check your connection, permissions,
+          and that the backend is running.
+        </div>
+      ) : null}
+
       <div className="space-y-4">
         <div className="rounded-xl border overflow-x-auto">
           <Table>

@@ -449,7 +449,12 @@ export const adminApi = {
     );
   },
 
-  getFaqs: () => apiRequest<FaqItem[]>("faqs/admin/all"),
+  getFaqs: async () => {
+    const response = await apiRequest<{ faqs?: FaqItem[]; total?: number }>(
+      "faqs/admin/all",
+    );
+    return response.faqs ?? [];
+  },
 
   createFaq: (data: Partial<FaqItem>) =>
     apiRequest<FaqItem>("faqs", { method: "POST", body: data }),
@@ -471,7 +476,13 @@ export const adminApi = {
   deleteSupport: (id: string) =>
     apiRequest<{ message: string }>(`support/${id}`, { method: "DELETE" }),
 
-  getTerms: () => apiRequest<TermsItem[]>("terms-and-policy/admin/all"),
+  getTerms: async () => {
+    const response = await apiRequest<{
+      policies?: TermsItem[];
+      total?: number;
+    }>("terms-and-policy/admin/all");
+    return response.policies ?? [];
+  },
 
   createTerms: (data: Partial<TermsItem>) =>
     apiRequest<TermsItem>("terms-and-policy", { method: "POST", body: data }),
