@@ -518,6 +518,43 @@ export interface SupportItem {
   updatedAt?: string;
 }
 
+export type AmbassadorApplicationStatus = "pending" | "accepted" | "declined";
+export type AmbassadorType = "campus" | "community";
+
+export interface AmbassadorApplicationItem {
+  id: string;
+  userId: string;
+  type: AmbassadorType;
+  status: AmbassadorApplicationStatus;
+  fullName: string;
+  email: string;
+  phone?: string;
+  city: string;
+  country: string;
+  institution?: string;
+  whyJoin: string;
+  readingExperience: string;
+  writingExperience?: string;
+  favoriteGenres: string[];
+  communityDescription: string;
+  estimatedReach: number;
+  hasLedCommunityBefore: boolean;
+  communityPlatforms: string[];
+  weeklyHoursCommitment: number;
+  declineReason?: string;
+  reviewDeadline?: string;
+  reviewedAt?: string;
+  daysRemaining?: number;
+  createdAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    avatar?: string;
+  } | null;
+}
+
 export interface GenreAdminItem {
   id: string;
   name: string;

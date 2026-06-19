@@ -14,6 +14,7 @@ import {
   Mail,
   ScrollText,
   Tag,
+  Star,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -32,6 +33,7 @@ export const navItems: NavItem[] = [
   { title: "Episodes", href: "/episodes", icon: Layers, module: "core" },
   { title: "Chapters", href: "/chapters", icon: FileText, module: "core" },
   { title: "Users", href: "/users", icon: Users, module: "core" },
+  { title: "Ambassadors", href: "/ambassadors", icon: Star, module: "core" },
   { title: "Admins", href: "/admins", icon: Shield, module: "core" },
   {
     title: "Subscriptions",

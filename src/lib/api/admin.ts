@@ -27,6 +27,8 @@ import type {
   SubscriptionRecord,
   SupportItem,
   TermsItem,
+  AmbassadorApplicationItem,
+  AmbassadorApplicationStatus,
 } from "@/types/admin";
 
 type GenresListPayload = string[] | { genres?: string[] };
@@ -554,4 +556,22 @@ export const adminApi = {
     apiRequest<{ message: string }>(`admin/genres/${id}`, {
       method: "DELETE",
     }),
+
+  getAmbassadorApplications: async (status?: AmbassadorApplicationStatus) => {
+    const query = status ? `?status=${status}` : "";
+    const response = await apiRequest<{
+      applications?: AmbassadorApplicationItem[];
+      total?: number;
+    }>(`ambassadors/admin/applications${query}`);
+    return response.applications ?? [];
+  },
+
+  reviewAmbassadorApplication: (
+    id: string,
+    data: { status: "accepted" | "declined"; declineReason?: string },
+  ) =>
+    apiRequest<{ application: AmbassadorApplicationItem }>(
+      `ambassadors/admin/applications/${id}`,
+      { method: "PATCH", body: data },
+    ),
 };
