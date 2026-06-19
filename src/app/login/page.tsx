@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { ApiError } from "@/lib/api/client";
 import { StorytimeLogo } from "@/components/brand/storytime-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 function LoginForm() {
   const router = useRouter();
@@ -49,7 +50,7 @@ function LoginForm() {
   };
 
   return (
-    <Card className="relative w-full max-w-md border-white/10 bg-white/95 shadow-2xl backdrop-blur">
+    <Card className="relative w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
       <CardHeader className="space-y-3 text-center">
         <StorytimeLogo size="lg" priority className="mx-auto justify-center" />
         <CardTitle className="text-2xl">Storytime Admin</CardTitle>
@@ -116,7 +117,7 @@ function LoginForm() {
 
 function LoginFallback() {
   return (
-    <Card className="relative w-full max-w-md border-white/10 bg-white/95 shadow-2xl backdrop-blur">
+    <Card className="relative w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
       <CardHeader className="space-y-3 text-center">
         <Skeleton className="mx-auto h-16 w-12 rounded-md" />
         <Skeleton className="mx-auto h-8 w-48" />
@@ -133,8 +134,9 @@ function LoginFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-[#211312] p-4">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(248,149,29,0.25),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(255,158,60,0.15),transparent_35%)]" />
+    <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background p-4">
+      <ThemeToggle className="absolute top-4 right-4 z-10" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(248,149,29,0.18),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(255,158,60,0.12),transparent_35%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(248,149,29,0.25),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(255,158,60,0.15),transparent_35%)]" />
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />
       </Suspense>

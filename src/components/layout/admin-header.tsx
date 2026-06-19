@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AdminHeader() {
   const router = useRouter();
@@ -36,40 +37,43 @@ export function AdminHeader() {
         <Badge variant="outline" className="hidden sm:inline-flex capitalize">
           {process.env.NODE_ENV === "production" ? "Production" : "Development"}
         </Badge>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="relative inline-flex size-9 items-center justify-center rounded-full outline-none hover:bg-accent">
-            <Avatar className="size-9">
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-1">
-                <span className="font-medium">
-                  {admin?.firstName} {admin?.lastName}
-                </span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {admin?.email}
-                </span>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <User className="mr-2 size-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-destructive"
-            >
-              <LogOut className="mr-2 size-4" />
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger className="relative inline-flex size-9 items-center justify-center rounded-full outline-none hover:bg-accent">
+              <Avatar className="size-9">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">
+                    {admin?.firstName} {admin?.lastName}
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {admin?.email}
+                  </span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled>
+                <User className="mr-2 size-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive"
+              >
+                <LogOut className="mr-2 size-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

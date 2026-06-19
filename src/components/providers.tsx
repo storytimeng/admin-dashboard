@@ -2,12 +2,15 @@
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <TooltipProvider>
-      {children}
-      <Toaster richColors closeButton position="top-right" />
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        {children}
+        <Toaster richColors closeButton position="top-right" />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }
