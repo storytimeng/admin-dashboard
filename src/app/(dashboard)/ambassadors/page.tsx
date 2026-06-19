@@ -269,31 +269,88 @@ export default function AmbassadorsPage() {
                 <p className="text-muted-foreground mb-1">Why join</p>
                 <p className="whitespace-pre-wrap">{selected.whyJoin}</p>
               </div>
+
+              {(selected.profileTypes?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-1">Profile types</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.profileTypes?.map((item) => (
+                      <Badge key={item} variant="outline">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                  {selected.otherProfileType && (
+                    <p className="mt-2 whitespace-pre-wrap">
+                      Other: {selected.otherProfileType}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
-                <p className="text-muted-foreground mb-1">Reading experience</p>
-                <p className="whitespace-pre-wrap">
-                  {selected.readingExperience}
+                <p className="text-muted-foreground mb-1">Storytime role</p>
+                <p>{selected.storytimeRole || selected.readingExperience}</p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground mb-1">
+                  Part of organized community
+                </p>
+                <p>
+                  {(selected.partOfOrganizedCommunity ??
+                  selected.hasLedCommunityBefore)
+                    ? "Yes"
+                    : "No"}
                 </p>
               </div>
+
+              {(selected.promotionMethods?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-1">
+                    Promotion methods
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.promotionMethods?.map((item) => (
+                      <Badge key={item} variant="outline">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                  {selected.otherPromotionDetail && (
+                    <p className="mt-2 whitespace-pre-wrap">
+                      Other: {selected.otherPromotionDetail}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
-                <p className="text-muted-foreground mb-1">Community plan</p>
+                <p className="text-muted-foreground mb-1">Conflict handling</p>
                 <p className="whitespace-pre-wrap">
-                  {selected.communityDescription}
+                  {selected.conflictHandling || selected.writingExperience}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {selected.favoriteGenres.map((g) => (
-                  <Badge key={g} variant="outline">
-                    {g}
-                  </Badge>
-                ))}
-              </div>
-              <p>
-                <span className="text-muted-foreground">
-                  Weekly commitment:
-                </span>{" "}
-                {selected.weeklyHoursCommitment} hours
-              </p>
+
+              {!selected.profileTypes?.length && (
+                <div>
+                  <p className="text-muted-foreground mb-1">
+                    Reading experience
+                  </p>
+                  <p className="whitespace-pre-wrap">
+                    {selected.readingExperience}
+                  </p>
+                </div>
+              )}
+
+              {!selected.promotionMethods?.length && (
+                <div>
+                  <p className="text-muted-foreground mb-1">Community plan</p>
+                  <p className="whitespace-pre-wrap">
+                    {selected.communityDescription}
+                  </p>
+                </div>
+              )}
 
               {selected.status === "pending" && (
                 <div className="space-y-2 pt-2">

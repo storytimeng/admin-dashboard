@@ -532,7 +532,18 @@ export interface AmbassadorApplicationItem {
   city: string;
   country: string;
   institution?: string;
+  profileTypes?: string[];
+  otherProfileType?: string;
   whyJoin: string;
+  promotionMethods?: string[];
+  otherPromotionDetail?: string;
+  partOfOrganizedCommunity?: boolean;
+  storytimeRole?: string;
+  conflictHandling?: string;
+  agreedToResponsibility?: boolean;
+  agreedToIntegrity?: boolean;
+  agreedToMonthlyReports?: boolean;
+  agreedToPerformanceReview?: boolean;
   readingExperience: string;
   writingExperience?: string;
   favoriteGenres: string[];
