@@ -55,14 +55,76 @@ export interface AdminStory {
   likeCount?: number;
   commentCount?: number;
   viewCount?: number;
+  language?: string | null;
+  trigger?: boolean;
+  copyright?: boolean;
+  chapter?: boolean;
+  /** True when story uses episodic structure */
+  episodesEnabled?: boolean;
+  collaborate?: string[] | null;
   author?: {
-    id?: string;
+    id?: string | null;
     penName?: string | null;
     email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatar?: string | null;
   } | null;
   authorId?: string;
   createdAt?: string;
   updatedAt?: string;
+  suspendedAt?: string | null;
+}
+
+export interface AdminStoryDetail extends AdminStory {
+  /** Populated on GET /stories/:id when story.chapter is true */
+  chapters?: Array<{
+    id: string;
+    chapterNumber: number;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  /** Populated on GET /stories/:id when story uses episodes */
+  episodes?: Array<{
+    id: string;
+    episodeNumber: number;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+}
+
+export interface StoryChapterDetail {
+  id: string;
+  title: string;
+  content: string;
+  chapterNumber: number;
+  storyId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StoryEpisodeDetail {
+  id: string;
+  title: string;
+  content: string;
+  episodeNumber: number;
+  storyId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StoryCommentDetail {
+  id: string;
+  content: string;
+  storyId?: string;
+  userId?: string;
+  createdAt?: string;
+  user?: {
+    id?: string;
+    penName?: string | null;
+    email?: string | null;
+  };
+  replies?: StoryCommentDetail[];
 }
 
 export interface AdminEpisode {

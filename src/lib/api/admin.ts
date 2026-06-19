@@ -5,6 +5,7 @@ import type {
   AdminChapter,
   AdminLoginResponse,
   AdminStory,
+  AdminStoryDetail,
   AdminUser,
   AppUser,
   EmailDeliveryLog,
@@ -14,6 +15,9 @@ import type {
   PaymentAuditLog,
   PaymentRecord,
   ReportsOverview,
+  StoryChapterDetail,
+  StoryCommentDetail,
+  StoryEpisodeDetail,
   SubscriptionOverview,
   SubscriptionRecord,
   SupportItem,
@@ -96,6 +100,17 @@ export const adminApi = {
     apiRequest<{ message: string }>(`admin/stories/${id}`, {
       method: "DELETE",
     }),
+
+  getStory: (id: string) => apiRequest<AdminStoryDetail>(`stories/${id}`),
+
+  getStoryChapters: (id: string) =>
+    apiRequest<StoryChapterDetail[]>(`stories/${id}/chapters`),
+
+  getStoryEpisodes: (id: string) =>
+    apiRequest<StoryEpisodeDetail[]>(`stories/${id}/episodes`),
+
+  getStoryComments: (id: string) =>
+    apiRequest<StoryCommentDetail[]>(`stories/${id}/comments`),
 
   getEpisodes: () =>
     apiRequest<{ episodes: AdminEpisode[]; count: number }>("admin/episodes"),
