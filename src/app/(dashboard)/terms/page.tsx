@@ -34,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
-import type { TermsItem } from "@/types/admin";
+import type { PolicyType, TermsItem } from "@/types/admin";
 
 export default function TermsPage() {
   const { data, isLoading, mutate } = useSWR("terms", () =>
@@ -42,7 +42,11 @@ export default function TermsPage() {
   );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TermsItem | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string;
+    content: string;
+    type: PolicyType;
+  }>({
     title: "",
     content: "",
     type: "terms",
@@ -60,16 +64,30 @@ export default function TermsPage() {
     setForm({
       title: item.title,
       content: item.content,
-      type: item.type || "terms",
+      type: item.type === "privacy" ? "privacy" : "terms",
     });
     setOpen(true);
   };
 
   const save = async () => {
+    if (form.title.trim().length < 5) {
+      toast.error("Title must be at least 5 characters");
+      return;
+    }
+    if (form.content.trim().length < 50) {
+      toast.error("Content must be at least 50 characters");
+      return;
+    }
+
     setSaving(true);
     try {
-      if (editing) await adminApi.updateTerms(editing.id, form);
-      else await adminApi.createTerms(form);
+      const payload = {
+        title: form.title.trim(),
+        content: form.content,
+        type: form.type,
+      };
+      if (editing) await adminApi.updateTerms(editing.id, payload);
+      else await adminApi.createTerms(payload);
       toast.success(editing ? "Updated" : "Created");
       setOpen(false);
       await mutate();
@@ -171,7 +189,9 @@ export default function TermsPage() {
               <Label>Type</Label>
               <Select
                 value={form.type}
-                onValueChange={(v) => v && setForm((f) => ({ ...f, type: v }))}
+                onValueChange={(v) =>
+                  v && setForm((f) => ({ ...f, type: v as PolicyType }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -179,8 +199,6 @@ export default function TermsPage() {
                 <SelectContent>
                   <SelectItem value="terms">Terms of Service</SelectItem>
                   <SelectItem value="privacy">Privacy Policy</SelectItem>
-                  <SelectItem value="cookie">Cookie Policy</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>

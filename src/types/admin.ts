@@ -235,18 +235,29 @@ export interface FaqItem {
 
 export interface SupportItem {
   id: string;
-  title: string;
-  content: string;
-  order?: number;
+  email: string;
+  phone?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  twitter?: string | null;
+  linkedin?: string | null;
+  youtube?: string | null;
   isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export type PolicyType = "terms" | "privacy";
 
 export interface TermsItem {
   id: string;
   title: string;
   content: string;
-  type?: string;
+  type?: PolicyType;
+  version?: string | null;
   isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EmailTemplate {

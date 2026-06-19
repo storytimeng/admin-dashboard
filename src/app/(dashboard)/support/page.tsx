@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +26,44 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { adminApi } from "@/lib/api/admin";
 import type { SupportItem } from "@/types/admin";
+
+type SupportForm = Pick<
+  SupportItem,
+  | "email"
+  | "phone"
+  | "facebook"
+  | "instagram"
+  | "twitter"
+  | "linkedin"
+  | "youtube"
+  | "isActive"
+>;
+
+const EMPTY_FORM: SupportForm = {
+  email: "",
+  phone: "",
+  facebook: "",
+  instagram: "",
+  twitter: "",
+  linkedin: "",
+  youtube: "",
+  isActive: true,
+};
+
+function toPayload(form: SupportForm): SupportForm {
+  return {
+    email: form.email.trim(),
+    phone: form.phone?.trim() || undefined,
+    facebook: form.facebook?.trim() || undefined,
+    instagram: form.instagram?.trim() || undefined,
+    twitter: form.twitter?.trim() || undefined,
+    linkedin: form.linkedin?.trim() || undefined,
+    youtube: form.youtube?.trim() || undefined,
+    isActive: form.isActive,
+  };
+}
 
 export default function SupportPage() {
   const { data, isLoading, mutate } = useSWR("support", () =>
@@ -34,26 +71,41 @@ export default function SupportPage() {
   );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<SupportItem | null>(null);
-  const [form, setForm] = useState({ title: "", content: "" });
+  const [form, setForm] = useState<SupportForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ title: "", content: "" });
+    setForm(EMPTY_FORM);
     setOpen(true);
   };
 
   const openEdit = (item: SupportItem) => {
     setEditing(item);
-    setForm({ title: item.title, content: item.content });
+    setForm({
+      email: item.email,
+      phone: item.phone ?? "",
+      facebook: item.facebook ?? "",
+      instagram: item.instagram ?? "",
+      twitter: item.twitter ?? "",
+      linkedin: item.linkedin ?? "",
+      youtube: item.youtube ?? "",
+      isActive: item.isActive ?? true,
+    });
     setOpen(true);
   };
 
   const save = async () => {
+    if (!form.email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+
     setSaving(true);
     try {
-      if (editing) await adminApi.updateSupport(editing.id, form);
-      else await adminApi.createSupport(form);
+      const payload = toPayload(form);
+      if (editing) await adminApi.updateSupport(editing.id, payload);
+      else await adminApi.createSupport(payload);
       toast.success(editing ? "Updated" : "Created");
       setOpen(false);
       await mutate();
@@ -68,34 +120,43 @@ export default function SupportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Support"
-        description="Manage help articles and support content in the app."
+        description="Manage support contact details and social links shown in the app."
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-2 size-4" />
-            Add article
+            Add contact
           </Button>
         }
       />
+
       <div className="rounded-xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="w-40" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={2}>
+                <TableCell colSpan={4}>
                   <Skeleton className="h-8 w-full" />
                 </TableCell>
               </TableRow>
-            ) : (
-              data?.map((item) => (
+            ) : data?.length ? (
+              data.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium max-w-lg truncate">
-                    {item.title}
+                  <TableCell className="font-medium">{item.email}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.phone || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.isActive ? "default" : "secondary"}>
+                      {item.isActive ? "Active" : "Inactive"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
                     <Button
@@ -125,34 +186,85 @@ export default function SupportPage() {
                   </TableCell>
                 </TableRow>
               ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No support records yet
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Edit" : "Create"} support article
+              {editing ? "Edit" : "Create"} support contact
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Title</Label>
+              <Label htmlFor="support-email">Email *</Label>
               <Input
-                value={form.title}
+                id="support-email"
+                type="email"
+                placeholder="support@storytime.ng"
+                value={form.email}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
+                  setForm((f) => ({ ...f, email: e.target.value }))
                 }
               />
             </div>
             <div className="space-y-2">
-              <Label>Content</Label>
-              <RichTextEditor
-                value={form.content}
-                onChange={(content) => setForm((f) => ({ ...f, content }))}
-                minHeight="min-h-[280px]"
+              <Label htmlFor="support-phone">Phone</Label>
+              <Input
+                id="support-phone"
+                placeholder="+234…"
+                value={form.phone ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, phone: e.target.value }))
+                }
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(
+                [
+                  ["facebook", "Facebook URL"],
+                  ["instagram", "Instagram URL"],
+                  ["twitter", "Twitter / X URL"],
+                  ["linkedin", "LinkedIn URL"],
+                  ["youtube", "YouTube URL"],
+                ] as const
+              ).map(([key, label]) => (
+                <div key={key} className="space-y-2">
+                  <Label htmlFor={`support-${key}`}>{label}</Label>
+                  <Input
+                    id={`support-${key}`}
+                    type="url"
+                    placeholder="https://…"
+                    value={form[key] ?? ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, [key]: e.target.value }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Active</p>
+                <p className="text-xs text-muted-foreground">
+                  Only active records are shown to users
+                </p>
+              </div>
+              <Switch
+                checked={form.isActive ?? true}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
               />
             </div>
           </div>
