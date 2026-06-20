@@ -58,8 +58,10 @@ export const adminApi = {
   logout: () =>
     apiRequest<{ message: string }>("auth/logout", { method: "POST" }),
 
-  getProfile: () =>
-    apiRequest<{ message: string; admin: AdminUser }>("admin/profile"),
+  getProfile: (options?: { silent?: boolean }) =>
+    apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
+      silent: options?.silent,
+    }),
 
   getReportsOverview: () =>
     apiRequest<{ message: string; report: ReportsOverview }>(

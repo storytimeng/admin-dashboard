@@ -10,7 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isHydrated = useAdminAuthStore((s) => s.isHydrated);
+  const sessionValidated = useAdminAuthStore((s) => s.sessionValidated);
   const setAdmin = useAdminAuthStore((s) => s.setAdmin);
+  const markSessionValidated = useAdminAuthStore((s) => s.markSessionValidated);
   const [validating, setValidating] = useState(true);
 
   useEffect(() => {
@@ -24,12 +26,18 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (sessionValidated) {
+      setValidating(false);
+      return;
+    }
+
     let cancelled = false;
     adminApi
-      .getProfile()
+      .getProfile({ silent: true })
       .then((result) => {
         if (cancelled) return;
         setAdmin(result.admin);
+        markSessionValidated();
         setValidating(false);
       })
       .catch(() => {
@@ -42,7 +50,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isHydrated, router, setAdmin]);
+  }, [isHydrated, sessionValidated, router, setAdmin, markSessionValidated]);
 
   if (!isHydrated || validating || !getAdminToken()) {
     return (

@@ -10,11 +10,12 @@ function shouldUseProxy(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-const USE_PROXY = shouldUseProxy();
-const API_BASE =
-  USE_PROXY && typeof window !== "undefined"
-    ? "/api/proxy"
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+function getApiBase(): string {
+  if (shouldUseProxy() && typeof window !== "undefined") {
+    return "/api/proxy";
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+}
 
 export interface ApiEnvelope<T> {
   statusType: string;
@@ -37,15 +38,38 @@ export class ApiError extends Error {
   }
 }
 
-export function getAdminToken(): string | undefined {
+export function isValidAdminToken(
+  token: string | null | undefined,
+): token is string {
+  if (!token || token === "undefined" || token === "null") return false;
+  return token.split(".").length === 3;
+}
+
+function readStoredAdminToken(): string | undefined {
   const cookieToken = Cookies.get(ADMIN_TOKEN_KEY);
-  if (cookieToken) return cookieToken;
+  if (isValidAdminToken(cookieToken)) return cookieToken;
 
   if (typeof window === "undefined") return undefined;
-  return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ?? undefined;
+
+  const storageToken = localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+  if (isValidAdminToken(storageToken)) return storageToken;
+
+  return undefined;
+}
+
+export function getAdminToken(): string | undefined {
+  return readStoredAdminToken();
 }
 
 export function setAdminToken(token: string): void {
+  if (!isValidAdminToken(token)) {
+    throw new ApiError("Login response missing a valid access token", 500);
+  }
+
+  // Clear legacy cookies that may have been scoped to /login before path: "/" was set.
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
+
   Cookies.set(ADMIN_TOKEN_KEY, token, {
     expires: 7,
     sameSite: "lax",
@@ -59,6 +83,7 @@ export function setAdminToken(token: string): void {
 }
 
 export function clearAdminToken(): void {
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
   Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
   if (typeof window !== "undefined") {
     localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
@@ -85,7 +110,7 @@ export async function apiRequest<T>(
     headers = {},
   } = options;
 
-  const url = `${API_BASE}/${path.replace(/^\//, "")}`;
+  const url = `${getApiBase()}/${path.replace(/^\//, "")}`;
   const requestHeaders: Record<string, string> = {
     Accept: "application/json",
     ...headers,
