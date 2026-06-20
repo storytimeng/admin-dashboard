@@ -736,7 +736,7 @@ export default function AmbassadorsPage() {
                     <TableHead className="text-right">Awareness</TableHead>
                     <TableHead className="text-right">Reading</TableHead>
                     <TableHead className="text-right">Writing</TableHead>
-                    <TableHead className="text-right">Feedback</TableHead>
+                    <TableHead className="text-right">Community</TableHead>
                     <TableHead className="text-right">Consistency</TableHead>
                     <TableHead className="text-right">Impact Score</TableHead>
                   </TableRow>
