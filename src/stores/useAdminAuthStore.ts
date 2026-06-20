@@ -6,12 +6,12 @@ import {
   clearAdminToken,
   setAdminToken,
   getAdminToken,
+  resetSignOutGuard,
 } from "@/lib/api/client";
 import { normalizeAdminLoginResponse } from "@/lib/api/auth-helpers";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
-import { resetSignOutGuard } from "@/lib/api/client";
 
 interface AdminAuthState {
   admin: AdminUser | null;
@@ -71,7 +71,9 @@ export const useAdminAuthStore = create<AdminAuthState>()(
           admin: result.admin,
           isAuthenticated: true,
           isHydrated: true,
-          sessionReady: false,
+          // Login already returned a valid token + admin profile; no need to
+          // block useProtectedSWR until AdminAuthGuard re-validates via /profile.
+          sessionReady: true,
         });
         toast.success("Welcome back!");
       },
