@@ -2,7 +2,13 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ApiError, clearAdminToken, setAdminToken, getAdminToken, resetSignOutGuard } from "@/lib/api/client";
+import {
+  ApiError,
+  clearAdminToken,
+  setAdminToken,
+  getAdminToken,
+  resetSignOutGuard,
+} from "@/lib/api/client";
 import { normalizeAdminLoginResponse } from "@/lib/api/auth-helpers";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminUser } from "@/types/admin";
@@ -65,6 +71,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
         try {
           const verified = await adminApi.getProfile({
+            authToken: result.access_token,
             silent: true,
             signOutOnUnauthorized: false,
           });

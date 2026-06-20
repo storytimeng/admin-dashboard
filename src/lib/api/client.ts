@@ -41,28 +41,36 @@ export class ApiError extends Error {
   }
 }
 
+function normalizeStoredToken(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^Bearer\s+/i, "")
+    .replace(/^["']|["']$/g, "");
+}
+
 export function isValidAdminToken(
   token: string | null | undefined,
 ): token is string {
   if (!token || token === "undefined" || token === "null") return false;
-  return token.split(".").length === 3;
+  return normalizeStoredToken(token).split(".").length === 3;
 }
 
 function readStoredAdminToken(): string | undefined {
   const cookieToken = Cookies.get(ADMIN_TOKEN_KEY);
-  if (isValidAdminToken(cookieToken)) return cookieToken;
+  if (isValidAdminToken(cookieToken)) return normalizeStoredToken(cookieToken);
 
   if (typeof window === "undefined") return undefined;
 
   const storageToken = localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-  if (isValidAdminToken(storageToken)) return storageToken;
+  if (isValidAdminToken(storageToken))
+    return normalizeStoredToken(storageToken);
 
   return undefined;
 }
 
 export function getAdminToken(): string | undefined {
   if (isValidAdminToken(memoryAdminToken)) {
-    return memoryAdminToken;
+    return normalizeStoredToken(memoryAdminToken);
   }
 
   const stored = readStoredAdminToken();
@@ -72,8 +80,14 @@ export function getAdminToken(): string | undefined {
   return stored;
 }
 
+function removeAdminTokenCookies(): void {
+  Cookies.remove(ADMIN_TOKEN_KEY);
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
+}
+
 export function setAdminToken(token: string): void {
-  const normalized = token.trim();
+  const normalized = normalizeStoredToken(token);
   if (!isValidAdminToken(normalized)) {
     throw new ApiError("Login response missing a valid access token", 500);
   }
@@ -81,8 +95,7 @@ export function setAdminToken(token: string): void {
   memoryAdminToken = normalized;
   resetSignOutGuard();
 
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
+  removeAdminTokenCookies();
 
   Cookies.set(ADMIN_TOKEN_KEY, normalized, {
     expires: 7,
@@ -98,8 +111,7 @@ export function setAdminToken(token: string): void {
 
 export function clearAdminToken(): void {
   memoryAdminToken = undefined;
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
+  removeAdminTokenCookies();
   if (typeof window !== "undefined") {
     localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
   }
@@ -142,6 +154,7 @@ type RequestOptions = {
   method?: string;
   body?: unknown;
   auth?: boolean;
+  authToken?: string;
   silent?: boolean;
   signOutOnUnauthorized?: boolean;
   headers?: Record<string, string>;
@@ -155,6 +168,7 @@ export async function apiRequest<T>(
     method = "GET",
     body,
     auth = true,
+    authToken,
     silent = false,
     signOutOnUnauthorized = false,
     headers = {},
@@ -171,8 +185,8 @@ export async function apiRequest<T>(
   }
 
   if (auth) {
-    const token = getAdminToken();
-    if (!token) {
+    const token = authToken ? normalizeStoredToken(authToken) : getAdminToken();
+    if (!token || !isValidAdminToken(token)) {
       if (signOutOnUnauthorized) {
         signOutAdminSession();
       }

@@ -65,10 +65,12 @@ export const adminApi = {
   getProfile: (options?: {
     silent?: boolean;
     signOutOnUnauthorized?: boolean;
+    authToken?: string;
   }) =>
     apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
       silent: options?.silent,
       signOutOnUnauthorized: options?.signOutOnUnauthorized,
+      authToken: options?.authToken,
     }),
 
   validateSession: () =>
