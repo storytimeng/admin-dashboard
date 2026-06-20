@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -39,7 +39,7 @@ function commentDetailHref(comment: AdminComment) {
 
 export default function CommentsPage() {
   const router = useRouter();
-  const { data, isLoading, error, mutate } = useSWR("admin-comments", () =>
+  const { data, isLoading, error, mutate } = useProtectedSWR("admin-comments", () =>
     adminApi.getComments(),
   );
 

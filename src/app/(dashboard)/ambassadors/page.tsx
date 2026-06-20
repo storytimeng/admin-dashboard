@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { TablePagination } from "@/components/shared/table-pagination";
@@ -479,18 +479,18 @@ export default function AmbassadorsPage() {
   const leaderboardLimit = 20;
 
   const statusFilter = tab === "all" ? undefined : tab;
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useProtectedSWR(
     section === "applications" ? ["ambassador-applications", tab] : null,
     () => adminApi.getAmbassadorApplications(statusFilter),
   );
 
   const reportStatusFilter = reportTab === "all" ? undefined : reportTab;
-  const { data: reportData, isLoading: reportsLoading } = useSWR(
+  const { data: reportData, isLoading: reportsLoading } = useProtectedSWR(
     section === "reports" ? ["ambassador-monthly-reports", reportTab] : null,
     () => adminApi.getAmbassadorMonthlyReports(reportStatusFilter),
   );
 
-  const { data: leaderboardData, isLoading: leaderboardLoading } = useSWR(
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useProtectedSWR(
     section === "leaderboard"
       ? [
           "ambassador-leaderboard",

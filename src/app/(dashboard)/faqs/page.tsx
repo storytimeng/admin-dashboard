@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -52,7 +52,7 @@ function getAnswerPreview(answer: string): string {
 }
 
 export default function FaqsPage() {
-  const { data, isLoading, error, mutate } = useSWR("faqs", () =>
+  const { data, isLoading, error, mutate } = useProtectedSWR("faqs", () =>
     adminApi.getFaqs(),
   );
   const [open, setOpen] = useState(false);

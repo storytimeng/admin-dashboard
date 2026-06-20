@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -55,7 +55,7 @@ const ROLES: AdminRole[] = [
 
 export default function AdminsPage() {
   const currentAdmin = useAdminAuthStore((s) => s.admin);
-  const { data, isLoading, mutate } = useSWR("admin-list", () =>
+  const { data, isLoading, mutate } = useProtectedSWR("admin-list", () =>
     adminApi.getAdmins(),
   );
   const [inviteOpen, setInviteOpen] = useState(false);

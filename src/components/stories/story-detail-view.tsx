@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import {
   ArrowLeft,
   BookOpen,
@@ -96,17 +96,17 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
     isLoading,
     error,
     mutate,
-  } = useSWR(["story-detail", storyId], () => adminApi.getStory(storyId));
+  } = useProtectedSWR(["story-detail", storyId], () => adminApi.getStory(storyId));
 
-  const { data: chapters } = useSWR(["story-chapters", storyId], () =>
+  const { data: chapters } = useProtectedSWR(["story-chapters", storyId], () =>
     adminApi.getStoryChapters(storyId),
   );
 
-  const { data: episodes } = useSWR(["story-episodes", storyId], () =>
+  const { data: episodes } = useProtectedSWR(["story-episodes", storyId], () =>
     adminApi.getStoryEpisodes(storyId),
   );
 
-  const { data: comments } = useSWR(["story-comments", storyId], () =>
+  const { data: comments } = useProtectedSWR(["story-comments", storyId], () =>
     adminApi.getStoryComments(storyId),
   );
 

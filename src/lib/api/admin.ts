@@ -58,9 +58,16 @@ export const adminApi = {
   logout: () =>
     apiRequest<{ message: string }>("auth/logout", { method: "POST" }),
 
-  getProfile: (options?: { silent?: boolean }) =>
+  getProfile: (options?: { silent?: boolean; signOutOnUnauthorized?: boolean }) =>
     apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
       silent: options?.silent,
+      signOutOnUnauthorized: options?.signOutOnUnauthorized,
+    }),
+
+  validateSession: () =>
+    apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
+      silent: true,
+      signOutOnUnauthorized: true,
     }),
 
   getReportsOverview: () =>
@@ -71,6 +78,7 @@ export const adminApi = {
   getDashboardAnalytics: (days = 30) =>
     apiRequest<{ message: string; analytics: DashboardAnalytics }>(
       `admin/analytics/dashboard?days=${days}`,
+      { silent: true },
     ),
 
   getAudioInventory: (params?: {

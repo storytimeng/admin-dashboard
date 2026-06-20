@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import {
   ArrowLeft,
   Award,
@@ -70,7 +70,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, error, mutate } = useProtectedSWR(
     ["admin-user", userId],
     () => adminApi.getUser(userId),
   );

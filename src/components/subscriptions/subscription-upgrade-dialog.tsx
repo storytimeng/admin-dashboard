@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -38,7 +38,7 @@ export function SubscriptionUpgradeDialog({
   const [planCode, setPlanCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: plansData } = useSWR(open ? "subscription-plans" : null, () =>
+  const { data: plansData } = useProtectedSWR(open ? "subscription-plans" : null, () =>
     adminApi.getSubscriptionPlans(),
   );
 

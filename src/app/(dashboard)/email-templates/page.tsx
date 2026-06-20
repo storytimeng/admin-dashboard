@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Eye, Loader2, Mail, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -73,7 +73,7 @@ function matchesCategoryFilter(
 }
 
 export default function EmailTemplatesPage() {
-  const { data, isLoading, mutate } = useSWR("email-templates", () =>
+  const { data, isLoading, mutate } = useProtectedSWR("email-templates", () =>
     adminApi.getEmailTemplates(),
   );
 
@@ -103,7 +103,7 @@ export default function EmailTemplatesPage() {
   const [logsPage, setLogsPage] = useState(1);
   const [logsPageSize, setLogsPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
 
-  const { data: deliveryLogs, isLoading: logsLoading } = useSWR(
+  const { data: deliveryLogs, isLoading: logsLoading } = useProtectedSWR(
     ["email-delivery-logs", logsPage, logsPageSize],
     () =>
       adminApi.getEmailDeliveryLogs({ page: logsPage, limit: logsPageSize }),

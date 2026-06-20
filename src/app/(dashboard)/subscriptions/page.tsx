@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { MoreHorizontal, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -60,13 +60,13 @@ export default function SubscriptionsPage() {
     data: overview,
     isLoading: overviewLoading,
     mutate: mutateOverview,
-  } = useSWR("subs-overview", () => adminApi.getSubscriptionOverview());
+  } = useProtectedSWR("subs-overview", () => adminApi.getSubscriptionOverview());
   const {
     data: payments,
     isLoading: paymentsLoading,
     error: paymentsError,
     mutate: mutatePayments,
-  } = useSWR(["subs-payments", paymentsPage, paymentsPageSize], () =>
+  } = useProtectedSWR(["subs-payments", paymentsPage, paymentsPageSize], () =>
     adminApi.getPayments({ page: paymentsPage, limit: paymentsPageSize }),
   );
   const {
@@ -74,13 +74,13 @@ export default function SubscriptionsPage() {
     isLoading: recordsLoading,
     error: recordsError,
     mutate: mutateRecords,
-  } = useSWR(["subs-records", recordsPage, recordsPageSize], () =>
+  } = useProtectedSWR(["subs-records", recordsPage, recordsPageSize], () =>
     adminApi.getSubscriptionRecords({
       page: recordsPage,
       limit: recordsPageSize,
     }),
   );
-  const { data: auditLogs, isLoading: auditLoading } = useSWR(
+  const { data: auditLogs, isLoading: auditLoading } = useProtectedSWR(
     ["subs-audit-logs", auditPage, auditPageSize],
     () =>
       adminApi.getSubscriptionAuditLogs({

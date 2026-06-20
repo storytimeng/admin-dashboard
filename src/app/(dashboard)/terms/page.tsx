@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -48,7 +48,7 @@ import {
 } from "@/types/admin";
 
 export default function TermsPage() {
-  const { data, isLoading, error, mutate } = useSWR("terms", () =>
+  const { data, isLoading, error, mutate } = useProtectedSWR("terms", () =>
     adminApi.getTerms(),
   );
   const [open, setOpen] = useState(false);

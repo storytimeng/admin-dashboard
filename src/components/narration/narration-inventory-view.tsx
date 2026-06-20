@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import Link from "next/link";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
@@ -135,7 +135,7 @@ export function NarrationInventoryView() {
     setPage(1);
   }, [debouncedSearch, status, pageSize]);
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading } = useProtectedSWR(
     ["admin-audio-inventory", page, pageSize, status, debouncedSearch],
     () =>
       adminApi.getAudioInventory({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, MoreHorizontal, Search } from "lucide-react";
@@ -41,7 +41,7 @@ export default function StoriesPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
 
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useProtectedSWR(
     ["admin-stories", page, pageSize],
     () => adminApi.getStories({ page, limit: pageSize }),
   );

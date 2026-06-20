@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -72,7 +72,7 @@ function toPayload(form: SupportForm): SupportForm {
 }
 
 export default function SupportPage() {
-  const { data, isLoading, mutate } = useSWR("support", () =>
+  const { data, isLoading, mutate } = useProtectedSWR("support", () =>
     adminApi.getSupport(),
   );
   const [open, setOpen] = useState(false);

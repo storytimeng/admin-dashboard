@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ export function ChapterDetailView({ chapterId }: ChapterDetailViewProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, error, mutate } = useProtectedSWR(
     ["admin-chapter", chapterId],
     () => adminApi.getChapter(chapterId),
   );

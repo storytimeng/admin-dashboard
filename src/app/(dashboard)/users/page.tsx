@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { MoreHorizontal, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -39,7 +39,7 @@ import { formatDistanceToNow } from "date-fns";
 
 export default function UsersPage() {
   const router = useRouter();
-  const { data, error, isLoading, mutate } = useSWR("admin-users", () =>
+  const { data, error, isLoading, mutate } = useProtectedSWR("admin-users", () =>
     adminApi.getUsers(),
   );
   const [search, setSearch] = useState("");

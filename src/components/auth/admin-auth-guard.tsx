@@ -10,9 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isHydrated = useAdminAuthStore((s) => s.isHydrated);
-  const sessionValidated = useAdminAuthStore((s) => s.sessionValidated);
+  const sessionReady = useAdminAuthStore((s) => s.sessionReady);
   const setAdmin = useAdminAuthStore((s) => s.setAdmin);
-  const markSessionValidated = useAdminAuthStore((s) => s.markSessionValidated);
+  const markSessionReady = useAdminAuthStore((s) => s.markSessionReady);
   const [validating, setValidating] = useState(true);
 
   useEffect(() => {
@@ -26,18 +26,18 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (sessionValidated) {
+    if (sessionReady) {
       setValidating(false);
       return;
     }
 
     let cancelled = false;
     adminApi
-      .getProfile({ silent: true })
+      .validateSession()
       .then((result) => {
         if (cancelled) return;
         setAdmin(result.admin);
-        markSessionValidated();
+        markSessionReady();
         setValidating(false);
       })
       .catch(() => {
@@ -50,7 +50,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isHydrated, sessionValidated, router, setAdmin, markSessionValidated]);
+  }, [isHydrated, sessionReady, router, setAdmin, markSessionReady]);
 
   if (!isHydrated || validating || !getAdminToken()) {
     return (

@@ -11,31 +11,37 @@ import { normalizeAdminLoginResponse } from "@/lib/api/auth-helpers";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
+import { resetSignOutGuard } from "@/lib/api/client";
 
 interface AdminAuthState {
   admin: AdminUser | null;
   isAuthenticated: boolean;
   isHydrated: boolean;
-  sessionValidated: boolean;
+  sessionReady: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hydrate: () => void;
   setAdmin: (admin: AdminUser | null) => void;
-  markSessionValidated: () => void;
+  markSessionReady: () => void;
+  clearSession: () => void;
 }
 
 export const useAdminAuthStore = create<AdminAuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       admin: null,
       isAuthenticated: false,
       isHydrated: false,
-      sessionValidated: false,
+      sessionReady: false,
 
       hydrate: () => {
         const token = getAdminToken();
         if (!token) {
-          set({ admin: null, isAuthenticated: false, sessionValidated: false });
+          set({
+            admin: null,
+            isAuthenticated: false,
+            sessionReady: false,
+          });
         }
         set({ isHydrated: true });
       },
@@ -44,19 +50,28 @@ export const useAdminAuthStore = create<AdminAuthState>()(
         set({ admin, isAuthenticated: !!admin });
       },
 
-      markSessionValidated: () => {
-        set({ sessionValidated: true });
+      markSessionReady: () => {
+        set({ sessionReady: true });
+      },
+
+      clearSession: () => {
+        set({
+          admin: null,
+          isAuthenticated: false,
+          sessionReady: false,
+        });
       },
 
       login: async (email, password) => {
         const raw = await adminApi.login(email, password);
         const result = normalizeAdminLoginResponse(raw);
         setAdminToken(result.access_token);
+        resetSignOutGuard();
         set({
           admin: result.admin,
           isAuthenticated: true,
           isHydrated: true,
-          sessionValidated: true,
+          sessionReady: false,
         });
         toast.success("Welcome back!");
       },
@@ -71,7 +86,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
           set({
             admin: null,
             isAuthenticated: false,
-            sessionValidated: false,
+            sessionReady: false,
           });
           toast.success("Signed out");
         }
@@ -87,7 +102,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
         ...current,
         ...(persisted as Partial<AdminAuthState>),
         isHydrated: current.isHydrated,
-        sessionValidated: current.sessionValidated,
+        sessionReady: current.sessionReady,
       }),
       onRehydrateStorage: () => (state) => {
         state?.hydrate();

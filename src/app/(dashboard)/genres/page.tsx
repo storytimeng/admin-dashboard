@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import Link from "next/link";
 import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ import { adminApi } from "@/lib/api/admin";
 import type { GenreAdminItem } from "@/types/admin";
 
 export default function GenresPage() {
-  const { data, isLoading, error, mutate } = useSWR("admin-genres", () =>
+  const { data, isLoading, error, mutate } = useProtectedSWR("admin-genres", () =>
     adminApi.getAdminGenres(),
   );
 

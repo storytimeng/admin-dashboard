@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -30,7 +30,7 @@ import type { AdminEpisode } from "@/types/admin";
 
 export default function EpisodesPage() {
   const router = useRouter();
-  const { data, isLoading, mutate } = useSWR("admin-episodes", () =>
+  const { data, isLoading, mutate } = useProtectedSWR("admin-episodes", () =>
     adminApi.getEpisodes(),
   );
 
