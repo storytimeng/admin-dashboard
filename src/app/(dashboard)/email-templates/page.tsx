@@ -51,6 +51,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const CATEGORY_FILTERS = [
   { value: "all", label: "All templates" },
+  { value: "ambassador", label: "Ambassadors" },
   { value: "subscription", label: "Subscriptions & Premium" },
   { value: "onboarding", label: "Onboarding" },
   { value: "engagement", label: "Engagement" },
