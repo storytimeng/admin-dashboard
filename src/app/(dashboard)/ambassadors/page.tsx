@@ -77,18 +77,15 @@ function formatWeeklyCommitment(hours: number): string {
 function getApplicationReviewFields(application: AmbassadorApplicationItem) {
   const storytimeRole = application.storytimeRole?.trim() || null;
   const readingExperience = application.readingExperience?.trim() || null;
+  const storytimeRoleDisplay = storytimeRole || readingExperience || null;
   const conflictHandling =
     application.conflictHandling?.trim() ||
     application.writingExperience?.trim() ||
     null;
-  const showLegacyReadingExperience =
-    !application.profileTypes?.length && !storytimeRole && !!readingExperience;
 
   return {
-    storytimeRole,
-    readingExperience,
+    storytimeRoleDisplay,
     conflictHandling,
-    showLegacyReadingExperience,
   };
 }
 
@@ -157,17 +154,10 @@ function ApplicationReviewDetails({
 
       <div>
         <p className="text-muted-foreground mb-1">Storytime role</p>
-        <p>{displayText(reviewFields.storytimeRole)}</p>
+        <p className="whitespace-pre-wrap">
+          {displayText(reviewFields.storytimeRoleDisplay)}
+        </p>
       </div>
-
-      {reviewFields.showLegacyReadingExperience && (
-        <div>
-          <p className="text-muted-foreground mb-1">Reading experience</p>
-          <p className="whitespace-pre-wrap">
-            {reviewFields.readingExperience}
-          </p>
-        </div>
-      )}
 
       <div>
         <p className="text-muted-foreground mb-1">
