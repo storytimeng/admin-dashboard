@@ -407,11 +407,36 @@ export interface DashboardAnalytics {
   trends: {
     userSignups: Array<{ date: string; count: number }>;
     reads: Array<{ date: string; count: number }>;
+    audioListens: Array<{ date: string; count: number }>;
     revenue: Array<{
       date: string;
       currency: string;
       amountMinor: number;
       formatted: string;
+    }>;
+  };
+  audio: {
+    summary: {
+      totalListens: number;
+      listensLast7Days: number;
+      listensLast30Days: number;
+      uniqueListeners: number;
+      uniqueListenersLast30Days: number;
+      totalMinutes: number;
+      completedListens: number;
+      completionRate: number;
+      cachedNarrations: number;
+    };
+    contentBreakdown: Array<{ contentType: string; count: number }>;
+    topStories: Array<{
+      id: string;
+      title: string;
+      authorPenName: string | null;
+      listens: number;
+      completedListens: number;
+      totalMinutes: number;
+      chapterListens: number;
+      episodeListens: number;
     }>;
   };
   topStories: Array<{

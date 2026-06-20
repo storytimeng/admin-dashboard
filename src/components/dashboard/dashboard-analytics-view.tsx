@@ -27,6 +27,7 @@ import {
   CreditCard,
   Crown,
   UserPlus,
+  Headphones,
 } from "lucide-react";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
@@ -128,11 +129,17 @@ export function DashboardAnalyticsView({
 
   const topStories = analytics?.topStories ?? [];
   const topAuthors = analytics?.topAuthors ?? [];
+  const audioSummary = analytics?.audio?.summary;
+  const topAudioStories = analytics?.audio?.topStories ?? [];
+  const audioContentBreakdown = analytics?.audio?.contentBreakdown ?? [];
   const recentUsers = analytics?.recentUsers ?? [];
   const recentStories = analytics?.recentStories ?? [];
 
   const topStoriesPagination = useClientPagination(topStories, {
     defaultPageSize: 10,
+  });
+  const topAudioStoriesPagination = useClientPagination(topAudioStories, {
+    defaultPageSize: 5,
   });
   const topAuthorsPagination = useClientPagination(topAuthors, {
     defaultPageSize: 10,
@@ -257,6 +264,97 @@ export function DashboardAnalyticsView({
           icon={CreditCard}
           loading={loading}
         />
+        <KpiCard
+          title="Audio Listens"
+          value={audioSummary?.totalListens ?? "—"}
+          sub={`${audioSummary?.listensLast7Days ?? 0} this week · ${audioSummary?.uniqueListeners ?? 0} listeners · ${audioSummary?.completionRate ?? 0}% completed`}
+          icon={Headphones}
+          loading={loading}
+        />
+        <KpiCard
+          title="Listen Time"
+          value={
+            audioSummary?.totalMinutes
+              ? `${audioSummary.totalMinutes} min`
+              : "—"
+          }
+          sub={`${audioSummary?.cachedNarrations ?? 0} cached narrations · ${audioSummary?.listensLast30Days ?? 0} listens (30d)`}
+          icon={Headphones}
+          loading={loading}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Audio listens ({analytics?.trendDays ?? 30} days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <ChartSkeleton />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={analytics?.trends.audioListens ?? []}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatTrendDate}
+                    fontSize={11}
+                    tickLine={false}
+                  />
+                  <YAxis allowDecimals={false} fontSize={11} tickLine={false} />
+                  <Tooltip labelFormatter={(v) => formatTrendDate(String(v))} />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    name="Listens"
+                    stroke="#a855f7"
+                    fill="#a855f780"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Listen content type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <ChartSkeleton />
+            ) : audioContentBreakdown.length ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={audioContentBreakdown}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
+                  <XAxis dataKey="contentType" fontSize={11} tickLine={false} />
+                  <YAxis allowDecimals={false} fontSize={11} tickLine={false} />
+                  <Tooltip />
+                  <Bar
+                    dataKey="count"
+                    name="Listens"
+                    fill="#a855f7"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground py-16 text-center">
+                No audio listen data yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -651,6 +749,86 @@ export function DashboardAnalyticsView({
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">
+            Top stories by audio listens
+          </CardTitle>
+          <Link
+            href="/stories"
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            View stories
+          </Link>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : topAudioStories.length ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SerialNumberHead />
+                    <TableHead>Story</TableHead>
+                    <TableHead className="text-right">Listens</TableHead>
+                    <TableHead className="text-right">Completed</TableHead>
+                    <TableHead className="text-right">Minutes</TableHead>
+                    <TableHead className="text-right">Ch / Ep</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topAudioStoriesPagination.paginatedItems.map(
+                    (story, index) => (
+                      <TableRow key={story.id}>
+                        <SerialNumberCell
+                          index={index}
+                          offset={topAudioStoriesPagination.serialOffset}
+                        />
+                        <TableCell>
+                          <p className="font-medium">{story.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {story.authorPenName ?? "Unknown author"}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {story.listens}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {story.completedListens}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {story.totalMinutes}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                          {story.chapterListens} / {story.episodeListens}
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                page={topAudioStoriesPagination.page}
+                totalPages={topAudioStoriesPagination.totalPages}
+                total={topAudioStoriesPagination.total}
+                pageSize={topAudioStoriesPagination.pageSize}
+                onPageChange={topAudioStoriesPagination.setPage}
+                onPageSizeChange={
+                  topAudioStoriesPagination.handlePageSizeChange
+                }
+                pageSizeOptions={[5, 10, 20]}
+              />
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No audio listen data yet. Listens appear after users use Listen
+              mode.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
