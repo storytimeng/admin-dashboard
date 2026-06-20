@@ -9,6 +9,31 @@ const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 let cachedToken: string | null = null;
 
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeLocalStorageRemove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage may be unavailable (private mode, security policy, quota).
+  }
+}
+
 function removeLegacyCookie(name: string): void {
   if (typeof document === "undefined") return;
   const paths = ["/", "/login", ""];
@@ -47,14 +72,14 @@ export function purgeLegacyAuthStorage(): void {
   if (typeof window === "undefined") return;
 
   for (const key of LEGACY_LOCAL_STORAGE_KEYS) {
-    localStorage.removeItem(key);
+    safeLocalStorageRemove(key);
   }
 
   removeLegacyCookie(LEGACY_COOKIE_NAME);
 
-  const current = localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  const current = safeLocalStorageGet(ACCESS_TOKEN_STORAGE_KEY);
   if (current && !isAccessToken(current)) {
-    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    safeLocalStorageRemove(ACCESS_TOKEN_STORAGE_KEY);
     cachedToken = null;
   }
 }
@@ -68,7 +93,7 @@ export function getAccessToken(): string | null {
     return null;
   }
 
-  const stored = localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  const stored = safeLocalStorageGet(ACCESS_TOKEN_STORAGE_KEY);
   const token = extractAccessToken(stored);
   if (token) {
     cachedToken = token;
@@ -76,7 +101,7 @@ export function getAccessToken(): string | null {
   }
 
   if (stored) {
-    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    safeLocalStorageRemove(ACCESS_TOKEN_STORAGE_KEY);
   }
 
   cachedToken = null;
@@ -92,7 +117,9 @@ export function setAccessToken(raw: string): void {
   cachedToken = token;
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    if (!safeLocalStorageSet(ACCESS_TOKEN_STORAGE_KEY, token)) {
+      throw new Error("Unable to persist access token");
+    }
   }
 }
 
@@ -100,6 +127,6 @@ export function clearAccessToken(): void {
   cachedToken = null;
 
   if (typeof window !== "undefined") {
-    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    safeLocalStorageRemove(ACCESS_TOKEN_STORAGE_KEY);
   }
 }

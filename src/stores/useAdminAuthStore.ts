@@ -22,6 +22,9 @@ interface AdminAuthState {
   clearSession: () => void;
 }
 
+/** Invalidates in-flight bootstrap when login/logout starts. */
+let authOperationGeneration = 0;
+
 export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   status: "idle",
   admin: null,
@@ -29,30 +32,38 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   bootstrap: async () => {
     if (get().status !== "idle") return;
 
+    const generation = ++authOperationGeneration;
     set({ status: "loading" });
-    adminAuthService.initialize();
-
-    if (!adminAuthService.hasAccessToken()) {
-      set({ status: "unauthenticated", admin: null });
-      return;
-    }
 
     try {
+      adminAuthService.initialize();
+
+      if (!adminAuthService.hasAccessToken()) {
+        if (generation !== authOperationGeneration) return;
+        set({ status: "unauthenticated", admin: null });
+        return;
+      }
+
       const admin = await adminAuthService.getProfile();
+      if (generation !== authOperationGeneration) return;
       set({ status: "authenticated", admin });
     } catch {
+      if (generation !== authOperationGeneration) return;
       adminAuthService.clearLocalSession();
       set({ status: "unauthenticated", admin: null });
     }
   },
 
   login: async (email, password) => {
+    const generation = ++authOperationGeneration;
     set({ status: "loading" });
     try {
       const admin = await adminAuthService.login(email, password);
+      if (generation !== authOperationGeneration) return;
       set({ status: "authenticated", admin });
       toast.success("Welcome back!");
     } catch (error) {
+      if (generation !== authOperationGeneration) return;
       adminAuthService.clearLocalSession();
       set({ status: "unauthenticated", admin: null });
       throw error instanceof ApiError
@@ -62,12 +73,15 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   },
 
   logout: async () => {
+    const generation = ++authOperationGeneration;
     await adminAuthService.logout();
+    if (generation !== authOperationGeneration) return;
     set({ status: "unauthenticated", admin: null });
     toast.success("Signed out");
   },
 
   clearSession: () => {
+    authOperationGeneration += 1;
     adminAuthService.clearLocalSession();
     set({ status: "unauthenticated", admin: null });
   },
