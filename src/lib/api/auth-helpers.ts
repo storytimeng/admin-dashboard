@@ -22,7 +22,10 @@ export function normalizeAdminLoginResponse(raw: unknown): AdminLoginResponse {
 
   const access_token = source.access_token;
   const admin = source.admin;
-  const token = typeof access_token === "string" ? access_token : undefined;
+  if (typeof access_token !== "string") {
+    throw new ApiError("Login response missing access token", 500);
+  }
+  const token = access_token.trim();
 
   if (!isValidAdminToken(token)) {
     throw new ApiError("Login response missing access token", 500);

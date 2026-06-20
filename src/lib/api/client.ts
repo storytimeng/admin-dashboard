@@ -73,17 +73,18 @@ export function getAdminToken(): string | undefined {
 }
 
 export function setAdminToken(token: string): void {
-  if (!isValidAdminToken(token)) {
+  const normalized = token.trim();
+  if (!isValidAdminToken(normalized)) {
     throw new ApiError("Login response missing a valid access token", 500);
   }
 
-  memoryAdminToken = token;
+  memoryAdminToken = normalized;
   resetSignOutGuard();
 
   Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
   Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
 
-  Cookies.set(ADMIN_TOKEN_KEY, token, {
+  Cookies.set(ADMIN_TOKEN_KEY, normalized, {
     expires: 7,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -91,7 +92,7 @@ export function setAdminToken(token: string): void {
   });
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, normalized);
   }
 }
 
