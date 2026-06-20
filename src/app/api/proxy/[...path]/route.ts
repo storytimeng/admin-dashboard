@@ -4,6 +4,23 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://storytime-backend-1-0.onrender.com";
 
+const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+function sanitizeAuthorizationHeader(value: string | null): string | undefined {
+  if (!value) return undefined;
+
+  let token = value.trim();
+  while (/^Bearer\s+/i.test(token)) {
+    token = token.replace(/^Bearer\s+/i, "").trim();
+  }
+
+  if (!JWT_PATTERN.test(token)) {
+    return undefined;
+  }
+
+  return `Bearer ${token}`;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -64,23 +81,21 @@ async function proxyRequest(
     }
   }
 
-  const headers: HeadersInit = {};
-  const authorization = request.headers.get("authorization");
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const authorization = sanitizeAuthorizationHeader(
+    request.headers.get("authorization"),
+  );
   if (authorization) {
     headers.Authorization = authorization;
   }
 
-  request.headers.forEach((value, key) => {
-    const lowerKey = key.toLowerCase();
-    if (
-      lowerKey !== "host" &&
-      lowerKey !== "connection" &&
-      lowerKey !== "content-length" &&
-      lowerKey !== "accept-encoding"
-    ) {
-      headers[key] = value;
-    }
-  });
+  const contentType = request.headers.get("content-type");
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
 
   try {
     const isAnalytics = apiPath.startsWith("admin/analytics");

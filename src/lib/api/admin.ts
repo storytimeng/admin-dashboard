@@ -4,7 +4,6 @@ import type {
   AdminCommentType,
   AdminEpisode,
   AdminChapter,
-  AdminLoginResponse,
   AdminStory,
   AdminStoryDetail,
   AdminUser,
@@ -48,37 +47,6 @@ function normalizeGenreNames(
 }
 
 export const adminApi = {
-  login: (email: string, password: string) =>
-    apiRequest<AdminLoginResponse>("admin/login", {
-      method: "POST",
-      body: { email, password },
-      auth: false,
-    }),
-
-  logout: () =>
-    apiRequest<{ message: string }>("auth/logout", {
-      method: "POST",
-      silent: true,
-      signOutOnUnauthorized: false,
-    }),
-
-  getProfile: (options?: {
-    silent?: boolean;
-    signOutOnUnauthorized?: boolean;
-    authToken?: string;
-  }) =>
-    apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
-      silent: options?.silent,
-      signOutOnUnauthorized: options?.signOutOnUnauthorized,
-      authToken: options?.authToken,
-    }),
-
-  validateSession: () =>
-    apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
-      silent: true,
-      signOutOnUnauthorized: true,
-    }),
-
   getReportsOverview: () =>
     apiRequest<{ message: string; report: ReportsOverview }>(
       "admin/reports/overview",

@@ -1,137 +1,88 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import {
-  ApiError,
-  clearAdminToken,
-  setAdminToken,
-  getAdminToken,
-  resetSignOutGuard,
-} from "@/lib/api/client";
-import { normalizeAdminLoginResponse } from "@/lib/api/auth-helpers";
-import { adminApi } from "@/lib/api/admin";
+import { ApiError } from "@/lib/api/client";
+import { adminAuthService } from "@/lib/auth/auth-service";
+import { onSessionExpired } from "@/lib/auth/session-events";
 import type { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
 
+export type AuthStatus =
+  | "idle"
+  | "loading"
+  | "authenticated"
+  | "unauthenticated";
+
 interface AdminAuthState {
+  status: AuthStatus;
   admin: AdminUser | null;
-  isAuthenticated: boolean;
-  isHydrated: boolean;
-  sessionReady: boolean;
+  bootstrap: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  hydrate: () => void;
-  setAdmin: (admin: AdminUser | null) => void;
-  markSessionReady: () => void;
   clearSession: () => void;
 }
 
-export const useAdminAuthStore = create<AdminAuthState>()(
-  persist(
-    (set) => ({
-      admin: null,
-      isAuthenticated: false,
-      isHydrated: false,
-      sessionReady: false,
+export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
+  status: "idle",
+  admin: null,
 
-      hydrate: () => {
-        const token = getAdminToken();
-        if (!token) {
-          set({
-            admin: null,
-            isAuthenticated: false,
-            sessionReady: false,
-          });
-        }
-        set({ isHydrated: true });
-      },
+  bootstrap: async () => {
+    if (get().status !== "idle") return;
 
-      setAdmin: (admin) => {
-        set({ admin, isAuthenticated: !!admin });
-      },
+    set({ status: "loading" });
+    adminAuthService.initialize();
 
-      markSessionReady: () => {
-        set({ sessionReady: true });
-      },
+    if (!adminAuthService.hasAccessToken()) {
+      set({ status: "unauthenticated", admin: null });
+      return;
+    }
 
-      clearSession: () => {
-        set({
-          admin: null,
-          isAuthenticated: false,
-          sessionReady: false,
-        });
-      },
+    try {
+      const admin = await adminAuthService.getProfile();
+      set({ status: "authenticated", admin });
+    } catch {
+      adminAuthService.clearLocalSession();
+      set({ status: "unauthenticated", admin: null });
+    }
+  },
 
-      login: async (email, password) => {
-        const raw = await adminApi.login(email, password);
-        const result = normalizeAdminLoginResponse(raw);
-        setAdminToken(result.access_token);
-        resetSignOutGuard();
+  login: async (email, password) => {
+    set({ status: "loading" });
+    try {
+      const admin = await adminAuthService.login(email, password);
+      set({ status: "authenticated", admin });
+      toast.success("Welcome back!");
+    } catch (error) {
+      adminAuthService.clearLocalSession();
+      set({ status: "unauthenticated", admin: null });
+      throw error instanceof ApiError
+        ? error
+        : new ApiError("Login failed. Check your credentials.", 401);
+    }
+  },
 
-        try {
-          const verified = await adminApi.getProfile({
-            authToken: result.access_token,
-            silent: true,
-            signOutOnUnauthorized: false,
-          });
-          set({
-            admin: verified.admin,
-            isAuthenticated: true,
-            isHydrated: true,
-            sessionReady: true,
-          });
-        } catch (error) {
-          clearAdminToken();
-          throw error instanceof ApiError
-            ? error
-            : new ApiError("Could not verify admin session after login", 401);
-        }
+  logout: async () => {
+    await adminAuthService.logout();
+    set({ status: "unauthenticated", admin: null });
+    toast.success("Signed out");
+  },
 
-        toast.success("Welcome back!");
-      },
-
-      logout: async () => {
-        try {
-          await adminApi.logout();
-        } catch {
-          // Still clear local session if backend logout fails
-        } finally {
-          clearAdminToken();
-          set({
-            admin: null,
-            isAuthenticated: false,
-            sessionReady: false,
-          });
-          toast.success("Signed out");
-        }
-      },
-    }),
-    {
-      name: "storytime-admin-auth",
-      partialize: (state) => ({
-        admin: state.admin,
-        isAuthenticated: state.isAuthenticated,
-      }),
-      merge: (persisted, current) => ({
-        ...current,
-        ...(persisted as Partial<AdminAuthState>),
-        isHydrated: current.isHydrated,
-        sessionReady: current.sessionReady,
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.hydrate();
-      },
-    },
-  ),
-);
+  clearSession: () => {
+    adminAuthService.clearLocalSession();
+    set({ status: "unauthenticated", admin: null });
+  },
+}));
 
 export function useAdminRole() {
-  return get().admin?.role;
+  return useAdminAuthStore((s) => s.admin?.role);
 }
 
-function get() {
-  return useAdminAuthStore.getState();
+export function useIsAuthenticated(): boolean {
+  return useAdminAuthStore((s) => s.status === "authenticated");
+}
+
+export function useSessionReady(): boolean {
+  return useAdminAuthStore((s) => s.status === "authenticated");
 }
 
 export function canAccessModule(
@@ -153,4 +104,12 @@ export function canAccessModule(
       return _exhaustive;
     }
   }
+}
+
+/** Register global session-expired handler (call once from AuthProvider). */
+export function bindSessionExpiredHandler(onExpired: () => void): () => void {
+  return onSessionExpired(() => {
+    useAdminAuthStore.getState().clearSession();
+    onExpired();
+  });
 }

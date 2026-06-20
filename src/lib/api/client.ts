@@ -1,11 +1,6 @@
-import Cookies from "js-cookie";
 import { toast } from "sonner";
-
-const ADMIN_TOKEN_KEY = "adminToken";
-const ADMIN_TOKEN_STORAGE_KEY = "storytime-admin-token";
-
-let memoryAdminToken: string | undefined;
-let signOutInProgress = false;
+import { getAccessToken, isAccessToken } from "@/lib/auth/token";
+import { notifySessionExpired } from "@/lib/auth/session-events";
 
 function shouldUseProxy(): boolean {
   if (process.env.NEXT_PUBLIC_USE_PROXY === "true") return true;
@@ -41,82 +36,6 @@ export class ApiError extends Error {
   }
 }
 
-function normalizeStoredToken(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^Bearer\s+/i, "")
-    .replace(/^["']|["']$/g, "");
-}
-
-export function isValidAdminToken(
-  token: string | null | undefined,
-): token is string {
-  if (!token || token === "undefined" || token === "null") return false;
-  return normalizeStoredToken(token).split(".").length === 3;
-}
-
-function readStoredAdminToken(): string | undefined {
-  const cookieToken = Cookies.get(ADMIN_TOKEN_KEY);
-  if (isValidAdminToken(cookieToken)) return normalizeStoredToken(cookieToken);
-
-  if (typeof window === "undefined") return undefined;
-
-  const storageToken = localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-  if (isValidAdminToken(storageToken))
-    return normalizeStoredToken(storageToken);
-
-  return undefined;
-}
-
-export function getAdminToken(): string | undefined {
-  if (isValidAdminToken(memoryAdminToken)) {
-    return normalizeStoredToken(memoryAdminToken);
-  }
-
-  const stored = readStoredAdminToken();
-  if (stored) {
-    memoryAdminToken = stored;
-  }
-  return stored;
-}
-
-function removeAdminTokenCookies(): void {
-  Cookies.remove(ADMIN_TOKEN_KEY);
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
-  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/login" });
-}
-
-export function setAdminToken(token: string): void {
-  const normalized = normalizeStoredToken(token);
-  if (!isValidAdminToken(normalized)) {
-    throw new ApiError("Login response missing a valid access token", 500);
-  }
-
-  memoryAdminToken = normalized;
-  resetSignOutGuard();
-
-  removeAdminTokenCookies();
-
-  Cookies.set(ADMIN_TOKEN_KEY, normalized, {
-    expires: 7,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  });
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, normalized);
-  }
-}
-
-export function clearAdminToken(): void {
-  memoryAdminToken = undefined;
-  removeAdminTokenCookies();
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-  }
-}
-
 export function isSessionAuthError(status: number, message: string): boolean {
   if (status !== 401) return false;
 
@@ -126,35 +45,16 @@ export function isSessionAuthError(status: number, message: string): boolean {
     lower.includes("token has been revoked") ||
     lower.includes("authentication token is required") ||
     lower.includes("authentication required") ||
-    lower.includes("refresh tokens cannot be used")
+    lower.includes("not authenticated")
   );
-}
-
-export function resetSignOutGuard(): void {
-  signOutInProgress = false;
-}
-
-export function signOutAdminSession(): void {
-  if (typeof window === "undefined" || signOutInProgress) return;
-
-  signOutInProgress = true;
-  clearAdminToken();
-
-  // Lazy require avoids a circular dependency between the API client and auth store.
-  const { useAdminAuthStore } =
-    require("@/stores/useAdminAuthStore") as typeof import("@/stores/useAdminAuthStore");
-  useAdminAuthStore.getState().clearSession();
-
-  if (!window.location.pathname.startsWith("/login")) {
-    window.location.href = "/login?session=expired";
-  }
 }
 
 type RequestOptions = {
   method?: string;
   body?: unknown;
   auth?: boolean;
-  authToken?: string;
+  /** Explicit token override (e.g. immediately after login). */
+  accessToken?: string;
   silent?: boolean;
   signOutOnUnauthorized?: boolean;
   headers?: Record<string, string>;
@@ -168,7 +68,7 @@ export async function apiRequest<T>(
     method = "GET",
     body,
     auth = true,
-    authToken,
+    accessToken,
     silent = false,
     signOutOnUnauthorized = false,
     headers = {},
@@ -185,12 +85,12 @@ export async function apiRequest<T>(
   }
 
   if (auth) {
-    const token = authToken ? normalizeStoredToken(authToken) : getAdminToken();
-    if (!token || !isValidAdminToken(token)) {
+    const token = accessToken ?? getAccessToken();
+    if (!token || !isAccessToken(token)) {
       if (signOutOnUnauthorized) {
-        signOutAdminSession();
+        notifySessionExpired();
       }
-      throw new ApiError("Authentication token is required", 401);
+      throw new ApiError("Authentication required", 401);
     }
 
     requestHeaders.Authorization = `Bearer ${token}`;
@@ -233,7 +133,7 @@ export async function apiRequest<T>(
       signOutOnUnauthorized &&
       isSessionAuthError(response.status, message)
     ) {
-      signOutAdminSession();
+      notifySessionExpired();
     }
 
     if (!silent) toast.error(message);

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const status = useAdminAuthStore((s) => s.status);
   const login = useAdminAuthStore((s) => s.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,6 +31,12 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   const sessionExpired = searchParams.get("session") === "expired";
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
