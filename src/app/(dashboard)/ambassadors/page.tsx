@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -151,7 +152,9 @@ function MonthlyReportReviewDetails({
           <p>{report.referralStoriesPublished}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Events hosted (count)</p>
+          <p className="text-muted-foreground">
+            Activity submission flag (0/1)
+          </p>
           <p>{report.eventsHosted}</p>
         </div>
         <div>
@@ -211,6 +214,12 @@ function ApplicationReviewDetails({
           <p className="text-muted-foreground">Email</p>
           <p>{application.email}</p>
         </div>
+        {application.phone && (
+          <div>
+            <p className="text-muted-foreground">Phone</p>
+            <p>{application.phone}</p>
+          </div>
+        )}
         {application.applicationReference && (
           <div>
             <p className="text-muted-foreground">Application ID</p>
@@ -230,6 +239,64 @@ function ApplicationReviewDetails({
           </div>
         )}
       </div>
+
+      {(application.instagram ||
+        application.twitter ||
+        application.tiktok ||
+        application.linkedin) && (
+        <div className="grid grid-cols-2 gap-3">
+          {application.instagram && (
+            <div>
+              <p className="text-muted-foreground">Instagram</p>
+              <p>{application.instagram}</p>
+            </div>
+          )}
+          {application.twitter && (
+            <div>
+              <p className="text-muted-foreground">Twitter / X</p>
+              <p>{application.twitter}</p>
+            </div>
+          )}
+          {application.tiktok && (
+            <div>
+              <p className="text-muted-foreground">TikTok</p>
+              <p>{application.tiktok}</p>
+            </div>
+          )}
+          {application.linkedin && (
+            <div>
+              <p className="text-muted-foreground">LinkedIn</p>
+              <p>{application.linkedin}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {application.status === "declined" && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+          <div>
+            <p className="text-muted-foreground">Decline reason</p>
+            <p className="whitespace-pre-wrap">
+              {displayText(application.declineReason)}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Reviewed at</p>
+            <p>
+              {application.reviewedAt
+                ? new Date(application.reviewedAt).toLocaleString()
+                : "—"}
+            </p>
+          </div>
+          {application.canReapply === false &&
+            application.reapplyDaysRemaining != null && (
+              <p className="text-muted-foreground">
+                Reapply available in {application.reapplyDaysRemaining} day
+                {application.reapplyDaysRemaining === 1 ? "" : "s"}.
+              </p>
+            )}
+        </div>
+      )}
 
       <div>
         <p className="text-muted-foreground mb-1">Why join</p>
@@ -330,6 +397,31 @@ function ApplicationReviewDetails({
         {formatWeeklyCommitment(application.weeklyHoursCommitment)}
       </p>
 
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <p>
+          <span className="text-muted-foreground">
+            Responsibility agreement:
+          </span>{" "}
+          {application.agreedToResponsibility ? "Yes" : "No"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">Integrity agreement:</span>{" "}
+          {application.agreedToIntegrity ? "Yes" : "No"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            Monthly reports agreement:
+          </span>{" "}
+          {application.agreedToMonthlyReports ? "Yes" : "No"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            Performance review agreement:
+          </span>{" "}
+          {application.agreedToPerformanceReview ? "Yes" : "No"}
+        </p>
+      </div>
+
       {!application.promotionMethods?.length && (
         <div>
           <p className="text-muted-foreground mb-1">Community plan</p>
@@ -382,6 +474,9 @@ export default function AmbassadorsPage() {
   const [reviewing, setReviewing] = useState(false);
   const [leaderboardScope, setLeaderboardScope] =
     useState<AmbassadorLeaderboardScope>("global");
+  const [leaderboardCity, setLeaderboardCity] = useState("");
+  const [leaderboardOffset, setLeaderboardOffset] = useState(0);
+  const leaderboardLimit = 20;
 
   const statusFilter = tab === "all" ? undefined : tab;
   const { data, isLoading, mutate } = useSWR(
@@ -397,12 +492,22 @@ export default function AmbassadorsPage() {
 
   const { data: leaderboardData, isLoading: leaderboardLoading } = useSWR(
     section === "leaderboard"
-      ? ["ambassador-leaderboard", leaderboardScope]
+      ? [
+          "ambassador-leaderboard",
+          leaderboardScope,
+          leaderboardOffset,
+          leaderboardCity,
+        ]
       : null,
     () =>
       adminApi.getAmbassadorLeaderboard({
         scope: leaderboardScope,
-        limit: 50,
+        limit: leaderboardLimit,
+        offset: leaderboardOffset,
+        city:
+          leaderboardScope === "city"
+            ? leaderboardCity.trim() || undefined
+            : undefined,
       }),
   );
 
@@ -431,16 +536,13 @@ export default function AmbassadorsPage() {
     handlePageSizeChange: handleReportPageSizeChange,
   } = useClientPagination(reportItems);
 
-  const {
-    page: leaderboardPage,
-    setPage: setLeaderboardPage,
-    pageSize: leaderboardPageSize,
-    total: leaderboardTotal,
-    totalPages: leaderboardTotalPages,
-    paginatedItems: paginatedLeaderboardItems,
-    serialOffset: leaderboardSerialOffset,
-    handlePageSizeChange: handleLeaderboardPageSizeChange,
-  } = useClientPagination(leaderboardItems);
+  const leaderboardTotal = leaderboardData?.total ?? 0;
+  const leaderboardTotalPages = Math.max(
+    1,
+    Math.ceil(leaderboardTotal / leaderboardLimit),
+  );
+  const leaderboardPage = Math.floor(leaderboardOffset / leaderboardLimit) + 1;
+  const leaderboardSerialOffset = leaderboardOffset;
 
   const handleReview = async (status: "accepted" | "declined") => {
     if (!selected) return;
@@ -696,9 +798,10 @@ export default function AmbassadorsPage() {
         <TabsContent value="leaderboard" className="space-y-4">
           <Tabs
             value={leaderboardScope}
-            onValueChange={(v) =>
-              setLeaderboardScope(v as AmbassadorLeaderboardScope)
-            }
+            onValueChange={(v) => {
+              setLeaderboardScope(v as AmbassadorLeaderboardScope);
+              setLeaderboardOffset(0);
+            }}
           >
             <TabsList>
               {LEADERBOARD_SCOPE_TABS.map((scopeTab) => (
@@ -708,6 +811,25 @@ export default function AmbassadorsPage() {
               ))}
             </TabsList>
           </Tabs>
+
+          {leaderboardScope === "city" && (
+            <div className="max-w-sm space-y-2">
+              <Label htmlFor="leaderboard-city">City filter</Label>
+              <Input
+                id="leaderboard-city"
+                value={leaderboardCity}
+                onChange={(e) => {
+                  setLeaderboardCity(e.target.value);
+                  setLeaderboardOffset(0);
+                }}
+                placeholder="Enter city name (required for city rankings)"
+              />
+              <p className="text-xs text-muted-foreground">
+                City leaderboard requires a city filter. Results are empty until
+                you enter a city.
+              </p>
+            </div>
+          )}
 
           {leaderboardData?.nextResetDate && (
             <p className="text-sm text-muted-foreground">
@@ -742,7 +864,7 @@ export default function AmbassadorsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedLeaderboardItems.length === 0 ? (
+                  {leaderboardItems.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={12}
@@ -752,7 +874,7 @@ export default function AmbassadorsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedLeaderboardItems.map((item, index) => (
+                    leaderboardItems.map((item, index) => (
                       <TableRow key={item.ambassadorId}>
                         <SerialNumberCell
                           offset={leaderboardSerialOffset}
@@ -807,11 +929,13 @@ export default function AmbassadorsPage() {
 
               <TablePagination
                 page={leaderboardPage}
-                pageSize={leaderboardPageSize}
+                pageSize={leaderboardLimit}
                 total={leaderboardTotal}
                 totalPages={leaderboardTotalPages}
-                onPageChange={setLeaderboardPage}
-                onPageSizeChange={handleLeaderboardPageSizeChange}
+                onPageChange={(nextPage) =>
+                  setLeaderboardOffset((nextPage - 1) * leaderboardLimit)
+                }
+                onPageSizeChange={() => undefined}
               />
             </>
           )}

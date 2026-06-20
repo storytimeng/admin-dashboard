@@ -530,6 +530,10 @@ export interface AmbassadorApplicationItem {
   fullName: string;
   email: string;
   phone?: string;
+  instagram?: string;
+  twitter?: string;
+  tiktok?: string;
+  linkedin?: string;
   city: string;
   country: string;
   institution?: string;
@@ -554,6 +558,8 @@ export interface AmbassadorApplicationItem {
   communityPlatforms: string[];
   weeklyHoursCommitment: number;
   declineReason?: string;
+  canReapply?: boolean;
+  reapplyDaysRemaining?: number;
   reviewDeadline?: string;
   reviewedAt?: string;
   daysRemaining?: number;
