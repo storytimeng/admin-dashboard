@@ -12,7 +12,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    void bootstrap();
+    void bootstrap().catch(() => {
+      // Superseded by a newer auth operation — that operation owns state recovery.
+    });
   }, [bootstrap]);
 
   useEffect(() => {

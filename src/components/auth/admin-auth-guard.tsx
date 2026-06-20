@@ -12,7 +12,9 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status === "idle") {
-      void bootstrap();
+      void bootstrap().catch(() => {
+        // Superseded by a newer auth operation — that operation owns state recovery.
+      });
     }
   }, [status, bootstrap]);
 

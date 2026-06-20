@@ -25,6 +25,10 @@ interface AdminAuthState {
 /** Invalidates in-flight bootstrap when login/logout starts. */
 let authOperationGeneration = 0;
 
+function isSuperseded(generation: number): boolean {
+  return generation !== authOperationGeneration;
+}
+
 export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   status: "idle",
   admin: null,
@@ -39,16 +43,18 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       adminAuthService.initialize();
 
       if (!adminAuthService.hasAccessToken()) {
-        if (generation !== authOperationGeneration) return;
+        if (isSuperseded(generation)) return;
         set({ status: "unauthenticated", admin: null });
         return;
       }
 
       const admin = await adminAuthService.getProfile();
-      if (generation !== authOperationGeneration) return;
+      if (isSuperseded(generation)) return;
       set({ status: "authenticated", admin });
-    } catch {
-      if (generation !== authOperationGeneration) return;
+    } catch (error) {
+      if (isSuperseded(generation)) {
+        throw error;
+      }
       adminAuthService.clearLocalSession();
       set({ status: "unauthenticated", admin: null });
     }
@@ -59,11 +65,17 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     set({ status: "loading" });
     try {
       const admin = await adminAuthService.login(email, password);
-      if (generation !== authOperationGeneration) return;
+      if (isSuperseded(generation)) {
+        throw new ApiError("Login was interrupted. Please try again.", 409);
+      }
       set({ status: "authenticated", admin });
       toast.success("Welcome back!");
     } catch (error) {
-      if (generation !== authOperationGeneration) return;
+      if (isSuperseded(generation)) {
+        throw error instanceof ApiError
+          ? error
+          : new ApiError("Login failed. Check your credentials.", 401);
+      }
       adminAuthService.clearLocalSession();
       set({ status: "unauthenticated", admin: null });
       throw error instanceof ApiError
@@ -75,7 +87,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   logout: async () => {
     const generation = ++authOperationGeneration;
     await adminAuthService.logout();
-    if (generation !== authOperationGeneration) return;
+    if (isSuperseded(generation)) return;
     set({ status: "unauthenticated", admin: null });
     toast.success("Signed out");
   },
