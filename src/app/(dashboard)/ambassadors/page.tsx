@@ -35,6 +35,8 @@ import { adminApi } from "@/lib/api/admin";
 import type {
   AmbassadorApplicationItem,
   AmbassadorApplicationStatus,
+  AmbassadorMonthlyReportItem,
+  AmbassadorMonthlyReportStatus,
 } from "@/types/admin";
 
 const STATUS_TABS: Array<{
@@ -87,6 +89,99 @@ function getApplicationReviewFields(application: AmbassadorApplicationItem) {
     readingExperience,
     conflictHandling,
   };
+}
+
+function reportStatusVariant(
+  status: AmbassadorMonthlyReportStatus,
+): "secondary" | "default" | "destructive" | "outline" {
+  switch (status) {
+    case "draft":
+      return "outline";
+    case "submitted":
+    case "processing":
+      return "secondary";
+    case "completed":
+      return "default";
+    case "inactive":
+      return "outline";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
+function MonthlyReportReviewDetails({
+  report,
+}: {
+  report: AmbassadorMonthlyReportItem;
+}) {
+  const ambassadorName = report.user
+    ? `${report.user.firstName} ${report.user.lastName}`.trim()
+    : "—";
+
+  return (
+    <div className="space-y-4 text-sm">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-muted-foreground">Ambassador</p>
+          <p className="font-medium">{ambassadorName}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Period</p>
+          <p className="font-medium">{report.monthLabel}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Type</p>
+          <p className="font-medium capitalize">
+            {report.ambassador?.type ?? "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Status</p>
+          <p className="font-medium capitalize">{report.status}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">New users introduced</p>
+          <p>{report.newReferrals}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Referral stories published</p>
+          <p>{report.referralStoriesPublished}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Events hosted (count)</p>
+          <p>{report.eventsHosted}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Submitted</p>
+          <p>
+            {report.submittedAt
+              ? new Date(report.submittedAt).toLocaleString()
+              : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-muted-foreground mb-1">
+          Activities and events hosted
+        </p>
+        <p className="whitespace-pre-wrap rounded-md border p-3 bg-muted/30">
+          {displayText(report.activitiesDescription)}
+        </p>
+      </div>
+
+      {report.programFeedback?.trim() && (
+        <div>
+          <p className="text-muted-foreground mb-1">Program feedback</p>
+          <p className="whitespace-pre-wrap rounded-md border p-3 bg-muted/30">
+            {report.programFeedback}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ApplicationReviewDetails({
@@ -259,22 +354,37 @@ function ApplicationReviewDetails({
 }
 
 export default function AmbassadorsPage() {
+  const [section, setSection] = useState<"applications" | "reports">(
+    "applications",
+  );
   const [tab, setTab] = useState<AmbassadorApplicationStatus | "all">(
     "pending",
   );
+  const [reportTab, setReportTab] = useState<
+    AmbassadorMonthlyReportStatus | "all"
+  >("submitted");
   const [selected, setSelected] = useState<AmbassadorApplicationItem | null>(
     null,
   );
+  const [selectedReport, setSelectedReport] =
+    useState<AmbassadorMonthlyReportItem | null>(null);
   const [declineReason, setDeclineReason] = useState("");
   const [reviewing, setReviewing] = useState(false);
 
   const statusFilter = tab === "all" ? undefined : tab;
   const { data, isLoading, mutate } = useSWR(
-    ["ambassador-applications", tab],
+    section === "applications" ? ["ambassador-applications", tab] : null,
     () => adminApi.getAmbassadorApplications(statusFilter),
   );
 
+  const reportStatusFilter = reportTab === "all" ? undefined : reportTab;
+  const { data: reportData, isLoading: reportsLoading } = useSWR(
+    section === "reports" ? ["ambassador-monthly-reports", reportTab] : null,
+    () => adminApi.getAmbassadorMonthlyReports(reportStatusFilter),
+  );
+
   const items = data ?? [];
+  const reportItems = reportData ?? [];
   const {
     page,
     setPage,
@@ -285,6 +395,17 @@ export default function AmbassadorsPage() {
     serialOffset,
     handlePageSizeChange,
   } = useClientPagination(items);
+
+  const {
+    page: reportPage,
+    setPage: setReportPage,
+    pageSize: reportPageSize,
+    total: reportTotal,
+    totalPages: reportTotalPages,
+    paginatedItems: paginatedReports,
+    serialOffset: reportSerialOffset,
+    handlePageSizeChange: handleReportPageSizeChange,
+  } = useClientPagination(reportItems);
 
   const handleReview = async (status: "accepted" | "declined") => {
     if (!selected) return;
@@ -316,21 +437,136 @@ export default function AmbassadorsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Ambassadors"
-        description="Review ambassador applications and manage the program."
+        description="Review ambassador applications and monthly impact reports."
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+      <Tabs
+        value={section}
+        onValueChange={(v) => setSection(v as typeof section)}
+      >
         <TabsList>
-          {STATUS_TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value}>
-              {t.label}
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+          <TabsTrigger value="reports">Monthly Reports</TabsTrigger>
         </TabsList>
 
-        {STATUS_TABS.map((t) => (
-          <TabsContent key={t.value} value={t.value} className="space-y-4">
-            {isLoading ? (
+        <TabsContent value="applications" className="space-y-4">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+            <TabsList>
+              {STATUS_TABS.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {STATUS_TABS.map((t) => (
+              <TabsContent key={t.value} value={t.value} className="space-y-4">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <SerialNumberHead />
+                          <TableHead>Applicant</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedItems.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="text-center text-muted-foreground"
+                            >
+                              No applications found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          paginatedItems.map((item, index) => (
+                            <TableRow key={item.id}>
+                              <SerialNumberCell
+                                offset={serialOffset}
+                                index={index}
+                              />
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{item.fullName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.email}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="capitalize">
+                                {item.type}
+                              </TableCell>
+                              <TableCell>
+                                {item.city}, {item.country}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={statusVariant(item.status)}>
+                                  {item.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelected(item);
+                                    setDeclineReason("");
+                                  }}
+                                >
+                                  Review
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+
+                    <TablePagination
+                      page={page}
+                      pageSize={pageSize}
+                      total={total}
+                      totalPages={totalPages}
+                      onPageChange={setPage}
+                      onPageSizeChange={handlePageSizeChange}
+                    />
+                  </>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <Tabs
+            value={reportTab}
+            onValueChange={(v) => setReportTab(v as typeof reportTab)}
+          >
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="draft">Drafts</TabsTrigger>
+              <TabsTrigger value="submitted">Submitted</TabsTrigger>
+              <TabsTrigger value="processing">Processing</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+            </TabsList>
+
+            {reportsLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
@@ -342,63 +578,64 @@ export default function AmbassadorsPage() {
                   <TableHeader>
                     <TableRow>
                       <SerialNumberHead />
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead>Ambassador</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Referrals</TableHead>
+                      <TableHead>Stories</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Submitted</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedItems.length === 0 ? (
+                    {paginatedReports.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
+                          colSpan={8}
                           className="text-center text-muted-foreground"
                         >
-                          No applications found.
+                          No monthly reports found.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      paginatedItems.map((item, index) => (
+                      paginatedReports.map((item, index) => (
                         <TableRow key={item.id}>
                           <SerialNumberCell
-                            offset={serialOffset}
+                            offset={reportSerialOffset}
                             index={index}
                           />
                           <TableCell>
                             <div>
-                              <p className="font-medium">{item.fullName}</p>
+                              <p className="font-medium">
+                                {item.user
+                                  ? `${item.user.firstName} ${item.user.lastName}`.trim()
+                                  : "—"}
+                              </p>
                               <p className="text-xs text-muted-foreground">
-                                {item.email}
+                                {item.user?.email ?? "—"}
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell className="capitalize">
-                            {item.type}
-                          </TableCell>
+                          <TableCell>{item.monthLabel}</TableCell>
+                          <TableCell>{item.newReferrals}</TableCell>
+                          <TableCell>{item.referralStoriesPublished}</TableCell>
                           <TableCell>
-                            {item.city}, {item.country}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusVariant(item.status)}>
+                            <Badge variant={reportStatusVariant(item.status)}>
                               {item.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {new Date(item.createdAt).toLocaleDateString()}
+                            {item.submittedAt
+                              ? new Date(item.submittedAt).toLocaleDateString()
+                              : "—"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
-                                setSelected(item);
-                                setDeclineReason("");
-                              }}
+                              onClick={() => setSelectedReport(item)}
                             >
-                              Review
+                              View
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -408,17 +645,17 @@ export default function AmbassadorsPage() {
                 </Table>
 
                 <TablePagination
-                  page={page}
-                  pageSize={pageSize}
-                  total={total}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                  onPageSizeChange={handlePageSizeChange}
+                  page={reportPage}
+                  pageSize={reportPageSize}
+                  total={reportTotal}
+                  totalPages={reportTotalPages}
+                  onPageChange={setReportPage}
+                  onPageSizeChange={handleReportPageSizeChange}
                 />
               </>
             )}
-          </TabsContent>
-        ))}
+          </Tabs>
+        </TabsContent>
       </Tabs>
 
       <Dialog
@@ -457,6 +694,21 @@ export default function AmbassadorsPage() {
               </>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!selectedReport}
+        onOpenChange={(open) => !open && setSelectedReport(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Monthly Report Details</DialogTitle>
+          </DialogHeader>
+
+          {selectedReport && (
+            <MonthlyReportReviewDetails report={selectedReport} />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -29,6 +29,8 @@ import type {
   TermsItem,
   AmbassadorApplicationItem,
   AmbassadorApplicationStatus,
+  AmbassadorMonthlyReportItem,
+  AmbassadorMonthlyReportStatus,
 } from "@/types/admin";
 
 type GenresListPayload = string[] | { genres?: string[] };
@@ -574,4 +576,14 @@ export const adminApi = {
       `ambassadors/admin/applications/${id}`,
       { method: "PATCH", body: data },
     ),
+
+  getAmbassadorMonthlyReports: async (
+    status?: AmbassadorMonthlyReportStatus,
+  ) => {
+    const query = status ? `?status=${status}` : "";
+    const response = await apiRequest<{
+      reports?: AmbassadorMonthlyReportItem[];
+    }>(`ambassadors/admin/reports${query}`);
+    return response.reports ?? [];
+  },
 };

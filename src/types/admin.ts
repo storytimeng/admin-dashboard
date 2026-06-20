@@ -567,6 +567,40 @@ export interface AmbassadorApplicationItem {
   } | null;
 }
 
+export type AmbassadorMonthlyReportStatus =
+  | "inactive"
+  | "draft"
+  | "submitted"
+  | "processing"
+  | "completed";
+
+export interface AmbassadorMonthlyReportItem {
+  id: string;
+  year: number;
+  month: number;
+  monthLabel: string;
+  status: AmbassadorMonthlyReportStatus;
+  newReferrals: number;
+  referralStoriesPublished: number;
+  activitiesDescription?: string | null;
+  programFeedback?: string | null;
+  eventsHosted: number;
+  submittedAt?: string | null;
+  processedAt?: string | null;
+  ambassador?: {
+    id: string;
+    type: AmbassadorType;
+    referralCode: string;
+  } | null;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    penName?: string | null;
+    email: string;
+  } | null;
+}
+
 export interface GenreAdminItem {
   id: string;
   name: string;
