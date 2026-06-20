@@ -56,9 +56,16 @@ export const adminApi = {
     }),
 
   logout: () =>
-    apiRequest<{ message: string }>("auth/logout", { method: "POST" }),
+    apiRequest<{ message: string }>("auth/logout", {
+      method: "POST",
+      silent: true,
+      signOutOnUnauthorized: false,
+    }),
 
-  getProfile: (options?: { silent?: boolean; signOutOnUnauthorized?: boolean }) =>
+  getProfile: (options?: {
+    silent?: boolean;
+    signOutOnUnauthorized?: boolean;
+  }) =>
     apiRequest<{ message: string; admin: AdminUser }>("admin/profile", {
       silent: options?.silent,
       signOutOnUnauthorized: options?.signOutOnUnauthorized,

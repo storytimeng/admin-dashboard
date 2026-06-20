@@ -112,6 +112,7 @@ export function isSessionAuthError(status: number, message: string): boolean {
     lower.includes("invalid or expired token") ||
     lower.includes("token has been revoked") ||
     lower.includes("authentication token is required") ||
+    lower.includes("authentication required") ||
     lower.includes("refresh tokens cannot be used")
   );
 }
@@ -214,7 +215,8 @@ export async function apiRequest<T>(
 
     if (
       auth &&
-      (signOutOnUnauthorized || isSessionAuthError(response.status, message))
+      signOutOnUnauthorized &&
+      isSessionAuthError(response.status, message)
     ) {
       signOutAdminSession();
     }

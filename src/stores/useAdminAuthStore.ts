@@ -2,12 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  clearAdminToken,
-  setAdminToken,
-  getAdminToken,
-  resetSignOutGuard,
-} from "@/lib/api/client";
+import { ApiError, clearAdminToken, setAdminToken, getAdminToken, resetSignOutGuard } from "@/lib/api/client";
 import { normalizeAdminLoginResponse } from "@/lib/api/auth-helpers";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminUser } from "@/types/admin";
@@ -67,14 +62,25 @@ export const useAdminAuthStore = create<AdminAuthState>()(
         const result = normalizeAdminLoginResponse(raw);
         setAdminToken(result.access_token);
         resetSignOutGuard();
-        set({
-          admin: result.admin,
-          isAuthenticated: true,
-          isHydrated: true,
-          // Login already returned a valid token + admin profile; no need to
-          // block useProtectedSWR until AdminAuthGuard re-validates via /profile.
-          sessionReady: true,
-        });
+
+        try {
+          const verified = await adminApi.getProfile({
+            silent: true,
+            signOutOnUnauthorized: false,
+          });
+          set({
+            admin: verified.admin,
+            isAuthenticated: true,
+            isHydrated: true,
+            sessionReady: true,
+          });
+        } catch (error) {
+          clearAdminToken();
+          throw error instanceof ApiError
+            ? error
+            : new ApiError("Could not verify admin session after login", 401);
+        }
+
         toast.success("Welcome back!");
       },
 
