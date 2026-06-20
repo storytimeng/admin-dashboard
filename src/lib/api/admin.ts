@@ -10,12 +10,14 @@ import type {
   AdminUser,
   AppUser,
   AdminUserDetail,
+  AudioInventory,
   EmailDeliveryLog,
   EmailTemplate,
   EmailTemplateSummary,
   FaqItem,
   GenreAdminItem,
   DashboardAnalytics,
+  NarrationInventoryStatus,
   PaymentAuditLog,
   PaymentRecord,
   ReportsOverview,
@@ -68,6 +70,24 @@ export const adminApi = {
     apiRequest<{ message: string; analytics: DashboardAnalytics }>(
       `admin/analytics/dashboard?days=${days}`,
     ),
+
+  getAudioInventory: (params?: {
+    page?: number;
+    limit?: number;
+    status?: NarrationInventoryStatus | "all";
+    search?: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.status) searchParams.set("status", params.status);
+    if (params?.search?.trim())
+      searchParams.set("search", params.search.trim());
+    const qs = searchParams.toString();
+    return apiRequest<{ message: string; inventory: AudioInventory }>(
+      `admin/analytics/audio-inventory${qs ? `?${qs}` : ""}`,
+    );
+  },
 
   getUsers: () =>
     apiRequest<{ message: string; count: number; users: AppUser[] }>(

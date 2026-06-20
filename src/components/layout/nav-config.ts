@@ -15,6 +15,7 @@ import {
   ScrollText,
   Tag,
   Star,
+  Mic,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -28,6 +29,7 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard, module: "core" },
+  { title: "Narration", href: "/narration", icon: Mic, module: "core" },
   { title: "Stories", href: "/stories", icon: BookOpen, module: "core" },
   { title: "Genres", href: "/genres", icon: Tag, module: "core" },
   { title: "Episodes", href: "/episodes", icon: Layers, module: "core" },

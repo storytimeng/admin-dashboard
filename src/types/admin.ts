@@ -478,6 +478,59 @@ export interface DashboardAnalytics {
   }>;
 }
 
+export type NarrationInventoryStatus =
+  | "ready"
+  | "pending"
+  | "failed"
+  | "queued"
+  | "missing";
+
+export interface AudioInventory {
+  generatedAt: string;
+  voice: string;
+  summary: {
+    listenableStories: number;
+    readyStories: number;
+    pendingStories: number;
+    failedStories: number;
+    queuedStories: number;
+    missingStories: number;
+    coveragePercent: number;
+    totalAudioRecords: number;
+    readyWithCloudinaryUrls: number;
+    totalMp3Segments: number;
+    readyEpisodeAudio: number;
+    readyChapterAudio: number;
+  };
+  pregen: {
+    totalJobs: number;
+    queued: number;
+    processing: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+  };
+  statusBreakdown: Record<NarrationInventoryStatus, number>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  items: Array<{
+    storyId: string;
+    title: string;
+    storyStatus: string;
+    authorPenName: string | null;
+    narrationStatus: NarrationInventoryStatus;
+    segmentCount: number;
+    totalDurationSeconds: number | null;
+    audioUpdatedAt: string | null;
+    pregenStatus: string | null;
+    pregenUpdatedAt: string | null;
+  }>;
+}
+
 export interface PaymentRecord {
   id: string;
   reference: string;

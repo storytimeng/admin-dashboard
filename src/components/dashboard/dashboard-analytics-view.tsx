@@ -284,6 +284,15 @@ export function DashboardAnalyticsView({
         />
       </div>
 
+      <div className="flex justify-end">
+        <Link
+          href="/narration"
+          className="text-sm font-medium text-primary hover:underline underline-offset-4"
+        >
+          View narration upload inventory →
+        </Link>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
