@@ -610,6 +610,11 @@ export interface AmbassadorLeaderboardItem {
   type: AmbassadorType;
   totalScore: number;
   tier: AmbassadorTier;
+  awarenessScore: number;
+  readingScore: number;
+  writingScore: number;
+  communityScore: number;
+  consistencyScore: number;
   affiliation: string;
   referralCode: string;
   user?: {

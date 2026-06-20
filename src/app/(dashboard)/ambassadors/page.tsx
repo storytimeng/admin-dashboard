@@ -733,6 +733,11 @@ export default function AmbassadorsPage() {
                     <TableHead>Affiliation</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Tier</TableHead>
+                    <TableHead className="text-right">Awareness</TableHead>
+                    <TableHead className="text-right">Reading</TableHead>
+                    <TableHead className="text-right">Writing</TableHead>
+                    <TableHead className="text-right">Feedback</TableHead>
+                    <TableHead className="text-right">Consistency</TableHead>
                     <TableHead className="text-right">Impact Score</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -740,7 +745,7 @@ export default function AmbassadorsPage() {
                   {paginatedLeaderboardItems.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={12}
                         className="text-center text-muted-foreground"
                       >
                         No leaderboard rankings found.
@@ -775,6 +780,21 @@ export default function AmbassadorsPage() {
                         </TableCell>
                         <TableCell className="capitalize">
                           {item.tier}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.awarenessScore}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.readingScore}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.writingScore}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.communityScore}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.consistencyScore}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {item.totalScore.toLocaleString()}
