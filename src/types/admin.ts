@@ -523,6 +523,7 @@ export type AmbassadorType = "campus" | "community";
 
 export interface AmbassadorApplicationItem {
   id: string;
+  applicationReference?: string;
   userId: string;
   type: AmbassadorType;
   status: AmbassadorApplicationStatus;

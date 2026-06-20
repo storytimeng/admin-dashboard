@@ -115,6 +115,12 @@ function ApplicationReviewDetails({
           <p className="text-muted-foreground">Email</p>
           <p>{application.email}</p>
         </div>
+        {application.applicationReference && (
+          <div>
+            <p className="text-muted-foreground">Application ID</p>
+            <p>#{application.applicationReference}</p>
+          </div>
+        )}
         <div>
           <p className="text-muted-foreground">Location</p>
           <p>
