@@ -65,6 +65,11 @@ async function proxyRequest(
   }
 
   const headers: HeadersInit = {};
+  const authorization = request.headers.get("authorization");
+  if (authorization) {
+    headers.Authorization = authorization;
+  }
+
   request.headers.forEach((value, key) => {
     const lowerKey = key.toLowerCase();
     if (

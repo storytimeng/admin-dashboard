@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAdminToken } from "@/lib/api/client";
+import { clearAdminToken, getAdminToken } from "@/lib/api/client";
 import { adminApi } from "@/lib/api/admin";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isHydrated = useAdminAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAdminAuthStore((s) => s.isAuthenticated);
   const setAdmin = useAdminAuthStore((s) => s.setAdmin);
   const [validating, setValidating] = useState(true);
 
@@ -19,6 +18,8 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
     const token = getAdminToken();
     if (!token) {
+      setAdmin(null);
+      clearAdminToken();
       router.replace("/login");
       return;
     }
@@ -34,6 +35,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       .catch(() => {
         if (cancelled) return;
         setAdmin(null);
+        clearAdminToken();
         router.replace("/login?session=expired");
       });
 
@@ -42,7 +44,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     };
   }, [isHydrated, router, setAdmin]);
 
-  if (!isHydrated || validating || !isAuthenticated || !getAdminToken()) {
+  if (!isHydrated || validating || !getAdminToken()) {
     return (
       <div className="flex min-h-svh flex-col gap-4 p-8">
         <Skeleton className="h-8 w-48" />

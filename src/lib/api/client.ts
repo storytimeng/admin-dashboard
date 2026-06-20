@@ -2,7 +2,15 @@ import Cookies from "js-cookie";
 import { toast } from "sonner";
 
 const ADMIN_TOKEN_KEY = "adminToken";
-const USE_PROXY = process.env.NEXT_PUBLIC_USE_PROXY === "true";
+const ADMIN_TOKEN_STORAGE_KEY = "storytime-admin-token";
+
+function shouldUseProxy(): boolean {
+  if (process.env.NEXT_PUBLIC_USE_PROXY === "true") return true;
+  if (process.env.NEXT_PUBLIC_USE_PROXY === "false") return false;
+  return process.env.NODE_ENV === "production";
+}
+
+const USE_PROXY = shouldUseProxy();
 const API_BASE =
   USE_PROXY && typeof window !== "undefined"
     ? "/api/proxy"
@@ -30,19 +38,31 @@ export class ApiError extends Error {
 }
 
 export function getAdminToken(): string | undefined {
-  return Cookies.get(ADMIN_TOKEN_KEY);
+  const cookieToken = Cookies.get(ADMIN_TOKEN_KEY);
+  if (cookieToken) return cookieToken;
+
+  if (typeof window === "undefined") return undefined;
+  return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) ?? undefined;
 }
 
 export function setAdminToken(token: string): void {
   Cookies.set(ADMIN_TOKEN_KEY, token, {
-    expires: 1,
+    expires: 7,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
+    path: "/",
   });
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+  }
 }
 
 export function clearAdminToken(): void {
-  Cookies.remove(ADMIN_TOKEN_KEY);
+  Cookies.remove(ADMIN_TOKEN_KEY, { path: "/" });
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+  }
 }
 
 type RequestOptions = {
@@ -77,9 +97,18 @@ export async function apiRequest<T>(
 
   if (auth) {
     const token = getAdminToken();
-    if (token) {
-      requestHeaders.Authorization = `Bearer ${token}`;
+    if (!token) {
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        clearAdminToken();
+        window.location.href = "/login?session=expired";
+      }
+      throw new ApiError("Authentication token is required", 401);
     }
+
+    requestHeaders.Authorization = `Bearer ${token}`;
   }
 
   let response: Response;

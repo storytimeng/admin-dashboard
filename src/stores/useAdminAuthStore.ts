@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { clearAdminToken, setAdminToken } from "@/lib/api/client";
+import { clearAdminToken, setAdminToken, getAdminToken } from "@/lib/api/client";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
@@ -25,6 +25,9 @@ export const useAdminAuthStore = create<AdminAuthState>()(
       isHydrated: false,
 
       hydrate: () => {
+        if (!getAdminToken()) {
+          set({ admin: null, isAuthenticated: false });
+        }
         set({ isHydrated: true });
       },
 
