@@ -29,6 +29,8 @@ import type {
   TermsItem,
   AmbassadorApplicationItem,
   AmbassadorApplicationStatus,
+  AmbassadorLeaderboardResponse,
+  AmbassadorLeaderboardScope,
   AmbassadorMonthlyReportItem,
   AmbassadorMonthlyReportStatus,
 } from "@/types/admin";
@@ -585,5 +587,25 @@ export const adminApi = {
       reports?: AmbassadorMonthlyReportItem[];
     }>(`ambassadors/admin/reports${query}`);
     return response.reports ?? [];
+  },
+
+  getAmbassadorLeaderboard: async (options?: {
+    scope?: AmbassadorLeaderboardScope;
+    limit?: number;
+    offset?: number;
+    city?: string;
+    institution?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.scope) params.set("scope", options.scope);
+    if (options?.limit != null) params.set("limit", String(options.limit));
+    if (options?.offset != null) params.set("offset", String(options.offset));
+    if (options?.city) params.set("city", options.city);
+    if (options?.institution) params.set("institution", options.institution);
+
+    const query = params.size > 0 ? `?${params.toString()}` : "";
+    return apiRequest<AmbassadorLeaderboardResponse>(
+      `ambassadors/admin/leaderboard${query}`,
+    );
   },
 };

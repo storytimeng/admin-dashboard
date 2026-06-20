@@ -35,6 +35,7 @@ import { adminApi } from "@/lib/api/admin";
 import type {
   AmbassadorApplicationItem,
   AmbassadorApplicationStatus,
+  AmbassadorLeaderboardScope,
   AmbassadorMonthlyReportItem,
   AmbassadorMonthlyReportStatus,
 } from "@/types/admin";
@@ -353,10 +354,19 @@ function ApplicationReviewDetails({
   );
 }
 
+const LEADERBOARD_SCOPE_TABS: Array<{
+  value: AmbassadorLeaderboardScope;
+  label: string;
+}> = [
+  { value: "global", label: "Global" },
+  { value: "campus", label: "Campus" },
+  { value: "city", label: "City" },
+];
+
 export default function AmbassadorsPage() {
-  const [section, setSection] = useState<"applications" | "reports">(
-    "applications",
-  );
+  const [section, setSection] = useState<
+    "applications" | "reports" | "leaderboard"
+  >("applications");
   const [tab, setTab] = useState<AmbassadorApplicationStatus | "all">(
     "pending",
   );
@@ -370,6 +380,8 @@ export default function AmbassadorsPage() {
     useState<AmbassadorMonthlyReportItem | null>(null);
   const [declineReason, setDeclineReason] = useState("");
   const [reviewing, setReviewing] = useState(false);
+  const [leaderboardScope, setLeaderboardScope] =
+    useState<AmbassadorLeaderboardScope>("global");
 
   const statusFilter = tab === "all" ? undefined : tab;
   const { data, isLoading, mutate } = useSWR(
@@ -383,8 +395,20 @@ export default function AmbassadorsPage() {
     () => adminApi.getAmbassadorMonthlyReports(reportStatusFilter),
   );
 
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useSWR(
+    section === "leaderboard"
+      ? ["ambassador-leaderboard", leaderboardScope]
+      : null,
+    () =>
+      adminApi.getAmbassadorLeaderboard({
+        scope: leaderboardScope,
+        limit: 50,
+      }),
+  );
+
   const items = data ?? [];
   const reportItems = reportData ?? [];
+  const leaderboardItems = leaderboardData?.leaderboard ?? [];
   const {
     page,
     setPage,
@@ -406,6 +430,17 @@ export default function AmbassadorsPage() {
     serialOffset: reportSerialOffset,
     handlePageSizeChange: handleReportPageSizeChange,
   } = useClientPagination(reportItems);
+
+  const {
+    page: leaderboardPage,
+    setPage: setLeaderboardPage,
+    pageSize: leaderboardPageSize,
+    total: leaderboardTotal,
+    totalPages: leaderboardTotalPages,
+    paginatedItems: paginatedLeaderboardItems,
+    serialOffset: leaderboardSerialOffset,
+    handlePageSizeChange: handleLeaderboardPageSizeChange,
+  } = useClientPagination(leaderboardItems);
 
   const handleReview = async (status: "accepted" | "declined") => {
     if (!selected) return;
@@ -437,7 +472,7 @@ export default function AmbassadorsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Ambassadors"
-        description="Review ambassador applications and monthly impact reports."
+        description="Review ambassador applications, monthly impact reports, and leaderboard rankings."
       />
 
       <Tabs
@@ -447,6 +482,7 @@ export default function AmbassadorsPage() {
         <TabsList>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="reports">Monthly Reports</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="applications" className="space-y-4">
@@ -655,6 +691,110 @@ export default function AmbassadorsPage() {
               </>
             )}
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="leaderboard" className="space-y-4">
+          <Tabs
+            value={leaderboardScope}
+            onValueChange={(v) =>
+              setLeaderboardScope(v as AmbassadorLeaderboardScope)
+            }
+          >
+            <TabsList>
+              {LEADERBOARD_SCOPE_TABS.map((scopeTab) => (
+                <TabsTrigger key={scopeTab.value} value={scopeTab.value}>
+                  {scopeTab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {leaderboardData?.nextResetDate && (
+            <p className="text-sm text-muted-foreground">
+              Rankings update monthly. Next reset:{" "}
+              {new Date(leaderboardData.nextResetDate).toLocaleDateString()}
+            </p>
+          )}
+
+          {leaderboardLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SerialNumberHead />
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Ambassador</TableHead>
+                    <TableHead>Affiliation</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Tier</TableHead>
+                    <TableHead className="text-right">Impact Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLeaderboardItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center text-muted-foreground"
+                      >
+                        No leaderboard rankings found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedLeaderboardItems.map((item, index) => (
+                      <TableRow key={item.ambassadorId}>
+                        <SerialNumberCell
+                          offset={leaderboardSerialOffset}
+                          index={index}
+                        />
+                        <TableCell className="font-medium">
+                          #{item.rank}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">
+                              {item.user
+                                ? item.user.penName?.trim() ||
+                                  `${item.user.firstName} ${item.user.lastName}`.trim()
+                                : "—"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.referralCode}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{item.affiliation}</TableCell>
+                        <TableCell className="capitalize">
+                          {item.type}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {item.tier}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {item.totalScore.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+
+              <TablePagination
+                page={leaderboardPage}
+                pageSize={leaderboardPageSize}
+                total={leaderboardTotal}
+                totalPages={leaderboardTotalPages}
+                onPageChange={setLeaderboardPage}
+                onPageSizeChange={handleLeaderboardPageSizeChange}
+              />
+            </>
+          )}
         </TabsContent>
       </Tabs>
 

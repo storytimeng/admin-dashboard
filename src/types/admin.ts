@@ -601,6 +601,36 @@ export interface AmbassadorMonthlyReportItem {
   } | null;
 }
 
+export type AmbassadorLeaderboardScope = "campus" | "city" | "global";
+export type AmbassadorTier = "bronze" | "silver" | "gold" | "platinum";
+
+export interface AmbassadorLeaderboardItem {
+  rank: number;
+  ambassadorId: string;
+  type: AmbassadorType;
+  totalScore: number;
+  tier: AmbassadorTier;
+  affiliation: string;
+  referralCode: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    penName?: string | null;
+    avatar?: string | null;
+  } | null;
+}
+
+export interface AmbassadorLeaderboardResponse {
+  leaderboard: AmbassadorLeaderboardItem[];
+  scope: AmbassadorLeaderboardScope;
+  total: number;
+  hasMore: boolean;
+  nextResetDate: string;
+  limit: number;
+  offset: number;
+}
+
 export interface GenreAdminItem {
   id: string;
   name: string;
