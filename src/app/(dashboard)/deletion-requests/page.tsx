@@ -53,6 +53,7 @@ export default function DeletionRequestsPage() {
       toast.error("Action failed. Please try again.");
     } finally {
       setActionLoading(false);
+      setConfirm(null);
     }
   };
 
