@@ -45,6 +45,9 @@ export interface AppUser {
   isPremium?: boolean;
   isEmailVerified?: boolean;
   deletedAt?: string | null;
+  deletionRequestedAt?: string | null;
+  deletionScheduledAt?: string | null;
+  deletionRequestStatus?: "pending" | "approved" | "revoked" | null;
   lastActiveAt?: string | null;
   createdAt?: string;
   genres?: string[] | null;

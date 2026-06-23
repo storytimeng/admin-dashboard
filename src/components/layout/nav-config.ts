@@ -16,6 +16,7 @@ import {
   Tag,
   Star,
   Mic,
+  Trash2,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -35,6 +36,12 @@ export const navItems: NavItem[] = [
   { title: "Episodes", href: "/episodes", icon: Layers, module: "core" },
   { title: "Chapters", href: "/chapters", icon: FileText, module: "core" },
   { title: "Users", href: "/users", icon: Users, module: "core" },
+  {
+    title: "Deletion Requests",
+    href: "/deletion-requests",
+    icon: Trash2,
+    module: "core",
+  },
   { title: "Ambassadors", href: "/ambassadors", icon: Star, module: "core" },
   { title: "Admins", href: "/admins", icon: Shield, module: "core" },
   {

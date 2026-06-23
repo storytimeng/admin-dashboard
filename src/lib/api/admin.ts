@@ -96,6 +96,21 @@ export const adminApi = {
   deleteUser: (id: string) =>
     apiRequest<{ message: string }>(`admin/users/${id}`, { method: "DELETE" }),
 
+  getDeletionRequests: () =>
+    apiRequest<{ message: string; count: number; users: AppUser[] }>(
+      "admin/users/deletion-requests",
+    ),
+
+  approveDeletion: (id: string) =>
+    apiRequest<{ message: string }>(`admin/users/${id}/approve-deletion`, {
+      method: "POST",
+    }),
+
+  revokeDeletion: (id: string) =>
+    apiRequest<{ message: string }>(`admin/users/${id}/revoke-deletion`, {
+      method: "POST",
+    }),
+
   getStories: (params?: {
     page?: number;
     limit?: number;
