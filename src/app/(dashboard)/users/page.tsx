@@ -45,7 +45,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState<{
     user: AppUser;
-    action: "suspend" | "unsuspend" | "delete";
+    action: "suspend" | "unsuspend" | "delete" | "reset-password";
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -81,6 +81,12 @@ export default function UsersPage() {
       if (action === "suspend") await adminApi.suspendUser(user.id);
       if (action === "unsuspend") await adminApi.unsuspendUser(user.id);
       if (action === "delete") await adminApi.deleteUser(user.id);
+      if (action === "reset-password") {
+        await adminApi.sendPasswordResetEmail(user.email!);
+        toast.success(`Password reset email sent to ${user.email}`);
+        setConfirm(null);
+        return;
+      }
       toast.success(moderationActionMessage("User", action));
       await mutate();
     } catch (err) {
@@ -264,6 +270,13 @@ export default function UsersPage() {
                           >
                             View profile
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setConfirm({ user, action: "reset-password" })
+                            }
+                          >
+                            Send password reset
+                          </DropdownMenuItem>
                           {user.isSuspended ? (
                             <DropdownMenuItem
                               onClick={() =>
@@ -318,15 +331,23 @@ export default function UsersPage() {
             ? "Delete user?"
             : confirm?.action === "suspend"
               ? "Suspend user?"
-              : "Unsuspend user?"
+              : confirm?.action === "unsuspend"
+                ? "Unsuspend user?"
+                : "Send password reset?"
         }
-        description={`This will ${confirm?.action} ${confirm?.user.email}.`}
+        description={
+          confirm?.action === "reset-password"
+            ? `A password reset email will be sent to ${confirm?.user.email}. They will receive a link to set a new password.`
+            : `This will ${confirm?.action} ${confirm?.user.email}.`
+        }
         confirmLabel={
           confirm?.action === "delete"
             ? "Delete"
             : confirm?.action === "suspend"
               ? "Suspend"
-              : "Unsuspend"
+              : confirm?.action === "unsuspend"
+                ? "Unsuspend"
+                : "Send email"
         }
         destructive={
           confirm?.action === "delete" || confirm?.action === "suspend"

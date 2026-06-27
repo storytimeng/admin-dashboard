@@ -10,6 +10,7 @@ import {
   BookOpen,
   Crown,
   Heart,
+  KeyRound,
   MessageSquare,
   Pencil,
   Trash2,
@@ -66,7 +67,7 @@ interface UserDetailViewProps {
 export function UserDetailView({ userId }: UserDetailViewProps) {
   const router = useRouter();
   const [confirmAction, setConfirmAction] = useState<
-    "suspend" | "unsuspend" | "delete" | null
+    "suspend" | "unsuspend" | "delete" | "reset-password" | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -85,6 +86,12 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         await adminApi.deleteUser(userId);
         toast.success("User removed");
         router.push("/users");
+        return;
+      }
+      if (confirmAction === "reset-password") {
+        await adminApi.sendPasswordResetEmail(data.user.email);
+        toast.success(`Password reset email sent to ${data.user.email}`);
+        setConfirmAction(null);
         return;
       }
       toast.success(moderationActionMessage("User", confirmAction));
@@ -155,6 +162,13 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
                 Suspend
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setConfirmAction("reset-password")}
+            >
+              <KeyRound className="mr-2 size-4" />
+              Send password reset
+            </Button>
             <Button
               variant="destructive"
               onClick={() => setConfirmAction("delete")}
@@ -595,15 +609,23 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
             ? "Delete user?"
             : confirmAction === "suspend"
               ? "Suspend user?"
-              : "Unsuspend user?"
+              : confirmAction === "unsuspend"
+                ? "Unsuspend user?"
+                : "Send password reset?"
         }
-        description={`This will ${confirmAction} ${user.email}.`}
+        description={
+          confirmAction === "reset-password"
+            ? `A password reset email will be sent to ${user.email}. They will receive a link to set a new password.`
+            : `This will ${confirmAction} ${user.email}.`
+        }
         confirmLabel={
           confirmAction === "delete"
             ? "Delete"
             : confirmAction === "suspend"
               ? "Suspend"
-              : "Unsuspend"
+              : confirmAction === "unsuspend"
+                ? "Unsuspend"
+                : "Send email"
         }
         destructive={confirmAction === "delete" || confirmAction === "suspend"}
         loading={actionLoading}

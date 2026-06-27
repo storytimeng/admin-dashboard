@@ -96,6 +96,12 @@ export const adminApi = {
   deleteUser: (id: string) =>
     apiRequest<{ message: string }>(`admin/users/${id}`, { method: "DELETE" }),
 
+  sendPasswordResetEmail: (email: string) =>
+    apiRequest<{ message: string }>("auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   getDeletionRequests: () =>
     apiRequest<{ message: string; count: number; users: AppUser[] }>(
       "admin/users/deletion-requests",
