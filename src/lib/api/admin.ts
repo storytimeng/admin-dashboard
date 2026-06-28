@@ -34,6 +34,7 @@ import type {
   AmbassadorLeaderboardScope,
   AmbassadorMonthlyReportItem,
   AmbassadorMonthlyReportStatus,
+  PopularitySettings,
 } from "@/types/admin";
 
 type GenresListPayload = string[] | { genres?: string[] };
@@ -636,4 +637,26 @@ export const adminApi = {
       `ambassadors/admin/leaderboard${query}`,
     );
   },
+
+  getPopularitySettings: () =>
+    apiRequest<{
+      settings: PopularitySettings;
+      presets: Record<string, { label: string; cron: string }>;
+    }>("admin/popularity-settings"),
+
+  updatePopularitySettings: (body: {
+    preset?: string;
+    cronExpression?: string;
+    isEnabled?: boolean;
+  }) =>
+    apiRequest<{ settings: PopularitySettings }>("admin/popularity-settings", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  triggerPopularityRefresh: () =>
+    apiRequest<{ updated: number; durationMs: number }>(
+      "admin/popularity-settings/trigger",
+      { method: "POST" },
+    ),
 };

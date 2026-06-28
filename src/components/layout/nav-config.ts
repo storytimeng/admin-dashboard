@@ -17,6 +17,7 @@ import {
   Star,
   Mic,
   Trash2,
+  TrendingUp,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -33,6 +34,7 @@ export const navItems: NavItem[] = [
   { title: "Narration", href: "/narration", icon: Mic, module: "core" },
   { title: "Stories", href: "/stories", icon: BookOpen, module: "core" },
   { title: "Genres", href: "/genres", icon: Tag, module: "core" },
+  { title: "Popularity", href: "/popularity", icon: TrendingUp, module: "core" },
   { title: "Episodes", href: "/episodes", icon: Layers, module: "core" },
   { title: "Chapters", href: "/chapters", icon: FileText, module: "core" },
   { title: "Users", href: "/users", icon: Users, module: "core" },

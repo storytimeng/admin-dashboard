@@ -810,3 +810,14 @@ export interface EmailDeliveryLog {
   errorMessage?: string | null;
   createdAt: string;
 }
+
+export interface PopularitySettings {
+  id: number;
+  cronExpression: string;
+  scheduleLabel: string;
+  isEnabled: boolean;
+  lastRunAt: string | null;
+  lastRunDurationMs: number | null;
+  lastRunStoriesUpdated: number | null;
+  updatedAt: string;
+}
