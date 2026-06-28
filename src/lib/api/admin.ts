@@ -651,7 +651,7 @@ export const adminApi = {
   }) =>
     apiRequest<{ settings: PopularitySettings }>("admin/popularity-settings", {
       method: "PATCH",
-      body: JSON.stringify(body),
+      body,
     }),
 
   triggerPopularityRefresh: () =>
