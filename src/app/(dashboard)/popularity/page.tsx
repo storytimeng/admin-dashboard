@@ -200,7 +200,7 @@ export default function PopularitySettingsPage() {
                 <Label>Schedule Preset</Label>
                 <Select
                   value={selectedPreset}
-                  onValueChange={setSelectedPreset}
+                  onValueChange={(v) => setSelectedPreset(v ?? "")}
                   disabled={!effectiveEnabled}
                 >
                   <SelectTrigger className="w-72">
