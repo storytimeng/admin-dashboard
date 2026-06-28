@@ -89,8 +89,8 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         return;
       }
       if (confirmAction === "reset-password") {
-        await adminApi.sendPasswordResetEmail(data.user.email);
-        toast.success(`Password reset email sent to ${data.user.email}`);
+        await adminApi.sendPasswordResetEmail(data!.user.email);
+        toast.success(`Password reset email sent to ${data!.user.email}`);
         setConfirmAction(null);
         return;
       }
