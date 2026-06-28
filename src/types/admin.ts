@@ -811,6 +811,33 @@ export interface EmailDeliveryLog {
   createdAt: string;
 }
 
+export type StoryDeletionRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface StoryDeletionRequestItem {
+  id: string;
+  storyId: string;
+  userId: string;
+  reason: string | null;
+  status: StoryDeletionRequestStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  requestedAt: string;
+  story?: {
+    id: string;
+    title: string;
+    storyStatus?: string | null;
+    author?: { penName?: string | null; email?: string | null } | null;
+  } | null;
+  user?: {
+    id: string;
+    penName?: string | null;
+    email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  } | null;
+}
+
 export interface PopularitySettings {
   id: number;
   cronExpression: string;

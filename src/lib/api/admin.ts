@@ -35,6 +35,8 @@ import type {
   AmbassadorMonthlyReportItem,
   AmbassadorMonthlyReportStatus,
   PopularitySettings,
+  StoryDeletionRequestItem,
+  StoryDeletionRequestStatus,
 } from "@/types/admin";
 
 type GenresListPayload = string[] | { genres?: string[] };
@@ -658,5 +660,23 @@ export const adminApi = {
     apiRequest<{ updated: number; durationMs: number }>(
       "admin/popularity-settings/trigger",
       { method: "POST" },
+    ),
+
+  getStoryDeletionRequests: (status?: StoryDeletionRequestStatus) => {
+    const qs = status ? `?status=${status}` : "";
+    return apiRequest<{ count: number; requests: StoryDeletionRequestItem[] }>(
+      `admin/story-deletion-requests${qs}`,
+    );
+  },
+
+  approveStoryDeletion: (id: string) =>
+    apiRequest<{ message: string }>(`admin/story-deletion-requests/${id}/approve`, {
+      method: "POST",
+    }),
+
+  rejectStoryDeletion: (id: string, reason?: string) =>
+    apiRequest<{ message: string; request: StoryDeletionRequestItem }>(
+      `admin/story-deletion-requests/${id}/reject`,
+      { method: "POST", body: reason ? { reason } : {} },
     ),
 };

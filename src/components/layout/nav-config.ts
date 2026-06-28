@@ -18,6 +18,7 @@ import {
   Mic,
   Trash2,
   TrendingUp,
+  BookX,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -42,6 +43,12 @@ export const navItems: NavItem[] = [
     title: "Deletion Requests",
     href: "/deletion-requests",
     icon: Trash2,
+    module: "core",
+  },
+  {
+    title: "Story Removals",
+    href: "/story-deletion-requests",
+    icon: BookX,
     module: "core",
   },
   { title: "Ambassadors", href: "/ambassadors", icon: Star, module: "core" },
