@@ -444,6 +444,12 @@ export const adminApi = {
   getEmailTemplates: () =>
     apiRequest<EmailTemplateSummary[]>("admin/email-templates"),
 
+  bulkToggleEmailTemplates: (isActive: boolean) =>
+    apiRequest<{ updated: number }>("admin/email-templates/bulk-toggle", {
+      method: "POST",
+      body: { isActive },
+    }),
+
   syncEmailTemplates: () =>
     apiRequest<{
       inserted: number;

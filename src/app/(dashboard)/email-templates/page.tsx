@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useProtectedSWR } from "@/hooks/use-protected-swr";
-import { Eye, Loader2, Mail, Pencil, RefreshCw } from "lucide-react";
+import { Eye, Loader2, Mail, Pencil, PowerOff, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { TablePagination } from "@/components/shared/table-pagination";
@@ -80,6 +80,10 @@ export default function EmailTemplatesPage() {
   const templates = data ?? [];
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [syncing, setSyncing] = useState(false);
+  const [bulkToggling, setBulkToggling] = useState(false);
+
+  const allActive = templates.length > 0 && templates.every((t) => t.isActive);
+  const anyActive = templates.some((t) => t.isActive);
 
   const filteredTemplates = useMemo(
     () =>
@@ -130,6 +134,33 @@ export default function EmailTemplatesPage() {
   });
   const [variableHints, setVariableHints] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const bulkToggle = async (isActive: boolean) => {
+    setBulkToggling(true);
+    try {
+      const result = await adminApi.bulkToggleEmailTemplates(isActive);
+      toast.success(
+        isActive
+          ? `All emails enabled (${result.updated} templates activated)`
+          : `All emails disabled (${result.updated} templates deactivated)`,
+      );
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update templates");
+    } finally {
+      setBulkToggling(false);
+    }
+  };
+
+  const quickToggle = async (template: EmailTemplateSummary, isActive: boolean) => {
+    try {
+      await adminApi.updateEmailTemplate(template.slug, { isActive });
+      toast.success(`"${template.name || template.slug}" ${isActive ? "enabled" : "disabled"}`);
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update template");
+    }
+  };
 
   const syncTemplates = async () => {
     setSyncing(true);
@@ -227,6 +258,57 @@ export default function EmailTemplatesPage() {
         }
       />
 
+      {/* Master email kill-switch */}
+      <div className={`flex items-center justify-between rounded-xl border p-4 ${!anyActive ? "border-destructive/40 bg-destructive/5" : "bg-muted/40"}`}>
+        <div className="flex items-center gap-3">
+          {anyActive ? (
+            <Zap className="size-5 text-green-600 shrink-0" />
+          ) : (
+            <PowerOff className="size-5 text-destructive shrink-0" />
+          )}
+          <div>
+            <p className="font-medium">
+              {anyActive ? "Emails are enabled" : "All emails are disabled"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {anyActive
+                ? "Automated emails are being sent to users based on each template's active status."
+                : "No automated emails will be sent to any user until you re-enable them."}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {anyActive ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => bulkToggle(false)}
+              disabled={bulkToggling || isLoading}
+            >
+              {bulkToggling ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <PowerOff className="mr-2 size-4" />
+              )}
+              Disable all emails
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => bulkToggle(true)}
+              disabled={bulkToggling || isLoading}
+            >
+              {bulkToggling ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Zap className="mr-2 size-4" />
+              )}
+              Enable all emails
+            </Button>
+          )}
+        </div>
+      </div>
+
       <Tabs defaultValue="templates">
         <TabsList>
           <TabsTrigger value="templates">Templates</TabsTrigger>
@@ -321,11 +403,15 @@ export default function EmailTemplatesPage() {
                         {template.triggerDescription || "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={template.isActive ? "default" : "secondary"}
-                        >
-                          {template.isActive ? "Active" : "Inactive"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={template.isActive ?? false}
+                            onCheckedChange={(v) => quickToggle(template, v)}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {template.isActive ? "On" : "Off"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {template.updatedAt
