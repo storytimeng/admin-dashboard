@@ -12,7 +12,7 @@ function getApiBase(): string {
   if (shouldUseProxy() && typeof window !== "undefined") {
     return "/api/proxy";
   }
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  return process.env.NEXT_PUBLIC_API_URL || "https://back.storytime.ng";
 }
 
 export interface ApiEnvelope<T> {

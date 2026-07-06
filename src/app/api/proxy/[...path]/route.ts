@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// BACKEND_URL is server-only (not NEXT_PUBLIC) — no reason to expose it to the client bundle.
+// Fallback to the Coolify deployment so the proxy never silently hits a dead instance.
 const BACKEND_URL =
+  process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://storytime-backend-1-0.onrender.com";
+  "https://back.storytime.ng";
 
 const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
