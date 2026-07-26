@@ -20,6 +20,7 @@ import {
   TrendingUp,
   BookX,
   Wallet,
+  BarChart3,
 } from "lucide-react";
 
 export type NavModule = "core" | "subscriptions" | "email" | "content";
@@ -33,6 +34,12 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard, module: "core" },
+  {
+    title: "Google Analytics",
+    href: "/google-analytics",
+    icon: BarChart3,
+    module: "core",
+  },
   { title: "Narration", href: "/narration", icon: Mic, module: "core" },
   { title: "Stories", href: "/stories", icon: BookOpen, module: "core" },
   { title: "Genres", href: "/genres", icon: Tag, module: "core" },

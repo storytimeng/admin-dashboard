@@ -16,6 +16,7 @@ import type {
   FaqItem,
   GenreAdminItem,
   DashboardAnalytics,
+  GoogleAnalyticsOverview,
   NarrationInventoryStatus,
   PaymentAuditLog,
   PaymentRecord,
@@ -58,6 +59,12 @@ export const adminApi = {
   getDashboardAnalytics: (days = 30) =>
     apiRequest<{ message: string; analytics: DashboardAnalytics }>(
       `admin/analytics/dashboard?days=${days}`,
+      { silent: true },
+    ),
+
+  getGoogleAnalyticsOverview: (days: 7 | 28 | 90 = 28) =>
+    apiRequest<{ message: string; analytics: GoogleAnalyticsOverview }>(
+      `admin/analytics/google?days=${days}`,
       { silent: true },
     ),
 
@@ -676,9 +683,12 @@ export const adminApi = {
   },
 
   approveStoryDeletion: (id: string) =>
-    apiRequest<{ message: string }>(`admin/story-deletion-requests/${id}/approve`, {
-      method: "POST",
-    }),
+    apiRequest<{ message: string }>(
+      `admin/story-deletion-requests/${id}/approve`,
+      {
+        method: "POST",
+      },
+    ),
 
   rejectStoryDeletion: (id: string, reason?: string) =>
     apiRequest<{ message: string; request: StoryDeletionRequestItem }>(

@@ -330,6 +330,35 @@ export interface SubscriptionOverview {
   }>;
 }
 
+export interface GoogleAnalyticsOverview {
+  configured: boolean;
+  propertyId: string;
+  measurementIdHint: string;
+  consoleUrl: string;
+  days: number;
+  generatedAt: string;
+  realtime?: {
+    activeUsers: number;
+  };
+  summary: {
+    activeUsers: number;
+    sessions: number;
+    screenPageViews: number;
+    engagementRate: number;
+    bounceRate: number;
+    averageSessionDurationSeconds: number;
+  };
+  daily: Array<{
+    date: string;
+    activeUsers: number;
+    screenPageViews: number;
+  }>;
+  topPages: Array<{ path: string; title: string; views: number }>;
+  trafficSources: Array<{ source: string; medium: string; sessions: number }>;
+  devices: Array<{ category: string; activeUsers: number }>;
+  countries: Array<{ country: string; activeUsers: number }>;
+}
+
 export interface DashboardAnalytics {
   generatedAt: string;
   trendDays: number;
@@ -811,7 +840,7 @@ export interface EmailDeliveryLog {
   createdAt: string;
 }
 
-export type StoryDeletionRequestStatus = 'pending' | 'approved' | 'rejected';
+export type StoryDeletionRequestStatus = "pending" | "approved" | "rejected";
 
 export interface StoryDeletionRequestItem {
   id: string;
