@@ -308,7 +308,8 @@ export function GoogleAnalyticsView() {
   const analytics = data?.analytics;
   const notConfigured =
     error instanceof ApiError &&
-    error.message.toLowerCase().includes("not configured");
+    (error.statusCode === 503 ||
+      error.message.toLowerCase().includes("not configured"));
 
   const chartData = useMemo(
     () =>
