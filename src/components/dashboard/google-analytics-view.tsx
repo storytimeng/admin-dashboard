@@ -236,14 +236,22 @@ function OverviewTables({ analytics }: { analytics: GoogleAnalyticsOverview }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {analytics.devices.map((row) => (
-                <TableRow key={row.category}>
-                  <TableCell className="capitalize">{row.category}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatNumber(row.activeUsers)}
+              {analytics.devices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-muted-foreground">
+                    No device data in this range.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                analytics.devices.map((row) => (
+                  <TableRow key={row.category}>
+                    <TableCell className="capitalize">{row.category}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatNumber(row.activeUsers)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -265,14 +273,22 @@ function OverviewTables({ analytics }: { analytics: GoogleAnalyticsOverview }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {analytics.countries.map((row) => (
-                <TableRow key={row.country}>
-                  <TableCell>{row.country}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatNumber(row.activeUsers)}
+              {analytics.countries.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-muted-foreground">
+                    No country data in this range.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                analytics.countries.map((row) => (
+                  <TableRow key={row.country}>
+                    <TableCell>{row.country}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatNumber(row.activeUsers)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -292,8 +308,7 @@ export function GoogleAnalyticsView() {
   const analytics = data?.analytics;
   const notConfigured =
     error instanceof ApiError &&
-    (error.statusCode === 503 ||
-      error.message.toLowerCase().includes("not configured"));
+    error.message.toLowerCase().includes("not configured");
 
   const chartData = useMemo(
     () =>
