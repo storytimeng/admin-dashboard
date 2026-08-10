@@ -27,12 +27,27 @@ export interface ApiEnvelope<T> {
 export class ApiError extends Error {
   statusCode: number;
   statusType?: string;
+  code?: string;
+  hint?: string;
+  setup?: string[];
 
-  constructor(message: string, statusCode: number, statusType?: string) {
+  constructor(
+    message: string,
+    statusCode: number,
+    options?: {
+      statusType?: string;
+      code?: string;
+      hint?: string;
+      setup?: string[];
+    },
+  ) {
     super(message);
     this.name = "ApiError";
     this.statusCode = statusCode;
-    this.statusType = statusType;
+    this.statusType = options?.statusType;
+    this.code = options?.code;
+    this.hint = options?.hint;
+    this.setup = options?.setup;
   }
 }
 
@@ -122,11 +137,40 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    const message =
-      (parsed as ApiEnvelope<T> | null)?.message ||
-      (parsed as { message?: string } | null)?.message ||
+    const envelope = parsed as
+      | (ApiEnvelope<T> & {
+          error?:
+            | string
+            | {
+                code?: string;
+                hint?: string;
+                setup?: string[];
+                details?: unknown;
+                error?: string;
+              };
+        })
+      | null;
+
+    let message =
+      envelope?.message ||
       (parsed as { error?: string } | null)?.error ||
       `Request failed (${response.status})`;
+
+    // Nest may put a structured payload under `error`
+    const errorBody =
+      envelope?.error && typeof envelope.error === "object"
+        ? envelope.error
+        : null;
+    const code = errorBody?.code;
+    const hint =
+      typeof errorBody?.hint === "string" ? errorBody.hint : undefined;
+    const setup = Array.isArray(errorBody?.setup)
+      ? errorBody.setup.filter((s): s is string => typeof s === "string")
+      : undefined;
+
+    if (typeof message !== "string") {
+      message = String(message);
+    }
 
     if (
       auth &&
@@ -137,7 +181,12 @@ export async function apiRequest<T>(
     }
 
     if (!silent) toast.error(message);
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, {
+      statusType: envelope?.statusType,
+      code,
+      hint,
+      setup,
+    });
   }
 
   if (parsed && "data" in parsed && parsed.data !== undefined) {

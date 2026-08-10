@@ -113,7 +113,13 @@ function LoadingSkeleton() {
   );
 }
 
-function SetupState({ message }: { message?: string }) {
+function SetupState({
+  message,
+  steps = SETUP_STEPS,
+}: {
+  message?: string;
+  steps?: string[];
+}) {
   return (
     <Alert>
       <AlertTitle>Google Analytics is not configured yet</AlertTitle>
@@ -123,7 +129,7 @@ function SetupState({ message }: { message?: string }) {
             "Connect a GA4 service account on the backend to load traffic data here."}
         </p>
         <ol className="list-decimal pl-5 space-y-1 text-sm">
-          {SETUP_STEPS.map((step) => (
+          {steps.map((step) => (
             <li key={step}>{step}</li>
           ))}
         </ol>
@@ -133,6 +139,62 @@ function SetupState({ message }: { message?: string }) {
             G-SQKY3GMQ0P
           </code>
         </p>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function RequestFailedState({ error }: { error: ApiError }) {
+  const steps =
+    error.setup && error.setup.length > 0
+      ? error.setup
+      : [
+          "Enable the Google Analytics Data API on the GCP project that owns the service account key.",
+          "In GA4 → Property access management, grant the service account Viewer.",
+          "Confirm GA4_PROPERTY_ID is numeric (not G-XXXXXXXX) and restart the Nest app.",
+        ];
+
+  const activationUrl = error.hint?.match(
+    /https:\/\/console\.developers\.google\.com\/apis\/api\/analyticsdata\.googleapis\.com\/overview\?project=\d+/,
+  )?.[0];
+
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>
+        {error.code === "GA4_API_DISABLED"
+          ? "Google Analytics Data API is disabled"
+          : "Could not load Google Analytics"}
+      </AlertTitle>
+      <AlertDescription className="space-y-3">
+        <p>{error.message}</p>
+        {activationUrl ? (
+          <p>
+            <a
+              href={activationUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium underline underline-offset-4"
+            >
+              Enable Google Analytics Data API
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </p>
+        ) : null}
+        <ol className="list-decimal pl-5 space-y-1 text-sm">
+          {steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        {error.hint ? (
+          <details className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+            <summary className="cursor-pointer font-medium text-foreground">
+              Technical details
+            </summary>
+            <pre className="mt-2 whitespace-pre-wrap break-words">
+              {error.hint}
+            </pre>
+          </details>
+        ) : null}
       </AlertDescription>
     </Alert>
   );
@@ -306,10 +368,19 @@ export function GoogleAnalyticsView() {
   );
 
   const analytics = data?.analytics;
+  const apiError = error instanceof ApiError ? error : null;
   const notConfigured =
-    error instanceof ApiError &&
-    (error.statusCode === 503 ||
-      error.message.toLowerCase().includes("not configured"));
+    apiError?.code === "GA4_NOT_CONFIGURED" ||
+    (!!apiError &&
+      !apiError.code &&
+      apiError.message.toLowerCase().includes("not configured"));
+  const requestFailed =
+    !!apiError &&
+    !notConfigured &&
+    (apiError.code === "GA4_REQUEST_FAILED" ||
+      apiError.code === "GA4_API_DISABLED" ||
+      apiError.statusCode === 503 ||
+      apiError.statusCode >= 400);
 
   const chartData = useMemo(
     () =>
@@ -375,11 +446,16 @@ export function GoogleAnalyticsView() {
 
       {!isLoading && notConfigured ? (
         <SetupState
-          message={error instanceof ApiError ? error.message : undefined}
+          message={apiError?.message}
+          steps={apiError?.setup?.length ? apiError.setup : SETUP_STEPS}
         />
       ) : null}
 
-      {!isLoading && error && !notConfigured ? (
+      {!isLoading && requestFailed && apiError ? (
+        <RequestFailedState error={apiError} />
+      ) : null}
+
+      {!isLoading && error && !notConfigured && !requestFailed ? (
         <Alert variant="destructive">
           <AlertTitle>Could not load Google Analytics</AlertTitle>
           <AlertDescription>
