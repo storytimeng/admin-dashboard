@@ -379,8 +379,7 @@ export function GoogleAnalyticsView() {
     !notConfigured &&
     (apiError.code === "GA4_REQUEST_FAILED" ||
       apiError.code === "GA4_API_DISABLED" ||
-      apiError.statusCode === 503 ||
-      apiError.statusCode >= 400);
+      apiError.statusCode === 503);
 
   const chartData = useMemo(
     () =>
@@ -471,7 +470,6 @@ export function GoogleAnalyticsView() {
               title="Active users"
               value={formatNumber(analytics.summary.activeUsers)}
               icon={Users}
-              hint={`Property ${analytics.propertyId}`}
             />
             <KpiCard
               title="Sessions"
