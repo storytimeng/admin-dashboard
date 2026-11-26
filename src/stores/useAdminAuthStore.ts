@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { ApiError } from "@/lib/api/client";
 import { adminAuthService } from "@/lib/auth/auth-service";
 import { onSessionExpired } from "@/lib/auth/session-events";
-import type { AdminUser } from "@/types/admin";
+import type { AdminTwoFactorChallenge, AdminUser } from "@/types/admin";
 import { navItems, type NavModule } from "@/components/layout/nav-config";
 import { toast } from "sonner";
 
@@ -18,7 +18,14 @@ interface AdminAuthState {
   status: AuthStatus;
   admin: AdminUser | null;
   bootstrap: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<
+    | { requiresTwoFactor: true; challenge: AdminTwoFactorChallenge }
+    | { requiresTwoFactor: false }
+  >;
+  completeTwoFactorLogin: (admin: AdminUser) => void;
   logout: () => Promise<void>;
   clearSession: () => void;
 }
@@ -65,12 +72,17 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     const generation = ++authOperationGeneration;
     set({ status: "loading" });
     try {
-      const admin = await adminAuthService.login(email, password);
+      const result = await adminAuthService.login(email, password);
       if (isSuperseded(generation)) {
         throw new ApiError("Login was interrupted. Please try again.", 409);
       }
-      set({ status: "authenticated", admin });
+      if (result.requiresTwoFactor) {
+        set({ status: "unauthenticated", admin: null });
+        return { requiresTwoFactor: true, challenge: result.challenge };
+      }
+      set({ status: "authenticated", admin: result.admin });
       toast.success("Welcome back!");
+      return { requiresTwoFactor: false };
     } catch (error) {
       if (isSuperseded(generation)) {
         throw error instanceof ApiError
@@ -83,6 +95,12 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         ? error
         : new ApiError("Login failed. Check your credentials.", 401);
     }
+  },
+
+  completeTwoFactorLogin: (admin) => {
+    authOperationGeneration += 1;
+    set({ status: "authenticated", admin });
+    toast.success("Welcome back!");
   },
 
   logout: async () => {
@@ -122,6 +140,7 @@ const ROLE_MODULES: Record<AdminUser["role"], Set<NavModule>> = {
     "email",
     "support",
     "system",
+    "security",
   ]),
   admin: new Set([
     "analytics",
@@ -132,13 +151,14 @@ const ROLE_MODULES: Record<AdminUser["role"], Set<NavModule>> = {
     "email",
     "support",
     "system",
+    "security",
   ]),
-  content_moderator: new Set(["analytics", "moderation", "users"]),
-  support: new Set(["analytics", "users", "support", "moderation"]),
-  finance: new Set(["analytics", "subscriptions"]),
-  marketing: new Set(["analytics", "email"]),
-  developer: new Set(["analytics", "system"]),
-  designer: new Set(["analytics", "moderation"]),
+  content_moderator: new Set(["analytics", "moderation", "users", "security"]),
+  support: new Set(["analytics", "users", "support", "moderation", "security"]),
+  finance: new Set(["analytics", "subscriptions", "security"]),
+  marketing: new Set(["analytics", "email", "security"]),
+  developer: new Set(["analytics", "system", "security"]),
+  designer: new Set(["analytics", "moderation", "security"]),
 };
 
 export function canAccessModule(

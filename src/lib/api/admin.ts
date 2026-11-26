@@ -11,6 +11,7 @@ import type {
   AdminUserDetail,
   AudioInventory,
   AdminAudioUnitView,
+  AdminSecurityOverview,
   AdminStoryAudioStudio,
   EmailDeliveryLog,
   EmailTemplate,
@@ -758,5 +759,50 @@ export const adminApi = {
     apiRequest<{ message: string; unit: AdminAudioUnitView }>(
       "admin/audio/regenerate-segment",
       { method: "POST", body },
+    ),
+
+  getSecurityOverview: () =>
+    apiRequest<{ message: string; security: AdminSecurityOverview }>(
+      "admin/security/overview",
+    ),
+
+  setupAdminTotp: () =>
+    apiRequest<{ message: string; secret: string; otpauthUri: string }>(
+      "admin/security/2fa/totp/setup",
+      { method: "POST" },
+    ),
+
+  confirmAdminTotp: (secret: string, code: string) =>
+    apiRequest<{
+      message: string;
+      twoFactorEnabled: boolean;
+      twoFactorMethod: "totp";
+    }>("admin/security/2fa/totp/confirm", {
+      method: "POST",
+      body: { secret, code },
+    }),
+
+  updateAdminTwoFactorMethod: (
+    method: "totp" | "email_otp" | "email_link" | "disabled",
+  ) =>
+    apiRequest<{
+      message: string;
+      twoFactorEnabled: boolean;
+      twoFactorMethod: "totp" | "email_otp" | "email_link" | null;
+    }>("admin/security/2fa/method", {
+      method: "POST",
+      body: { method },
+    }),
+
+  revokeAdminSession: (sessionId: string) =>
+    apiRequest<{ message: string; sessionId: string }>(
+      `admin/security/sessions/${sessionId}`,
+      { method: "DELETE" },
+    ),
+
+  revokeOtherAdminSessions: () =>
+    apiRequest<{ message: string; revokedCount: number }>(
+      "admin/security/sessions/revoke-others",
+      { method: "POST" },
     ),
 };

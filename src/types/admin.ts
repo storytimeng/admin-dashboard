@@ -8,6 +8,8 @@ export type AdminRole =
   | "designer"
   | "finance";
 
+export type AdminTwoFactorMethod = "totp" | "email_otp" | "email_link";
+
 export interface AdminUser {
   id: string;
   firstName: string;
@@ -15,15 +17,57 @@ export interface AdminUser {
   email: string;
   role: AdminRole;
   isSuspended: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorMethod?: AdminTwoFactorMethod | null;
   lastLoginAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AdminLoginResponse {
+export interface AdminTwoFactorChallenge {
+  requiresTwoFactor: true;
+  method: AdminTwoFactorMethod;
+  hasTotp: boolean;
+  challengeToken: string;
+  email: string;
+  message?: string;
+}
+
+export interface AdminAuthSessionResponse {
+  requiresTwoFactor?: false;
   message: string;
   access_token: string;
+  refresh_token?: string;
+  sessionId?: string;
   admin: AdminUser;
+}
+
+export type AdminLoginResponse = AdminTwoFactorChallenge | AdminAuthSessionResponse;
+
+export interface AdminSessionItem {
+  id: string;
+  deviceType: string;
+  browser: string;
+  os: string;
+  deviceName: string;
+  ipAddress: string | null;
+  location: string | null;
+  isActive: boolean;
+  isCurrent: boolean;
+  lastLoginAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminSecurityOverview {
+  twoFactorEnabled: boolean;
+  twoFactorMethod: AdminTwoFactorMethod | null;
+  hasTotpConfigured: boolean;
+  activeSessionCount: number;
+  currentSessionId: string | null;
+  sessions: AdminSessionItem[];
 }
 
 export interface AppUserStats {

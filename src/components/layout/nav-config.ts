@@ -21,6 +21,7 @@ import {
   BookX,
   Wallet,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 
 export type NavModule =
@@ -31,7 +32,8 @@ export type NavModule =
   | "subscriptions"
   | "email"
   | "support"
-  | "system";
+  | "system"
+  | "security";
 
 export interface NavItem {
   title: string;
@@ -106,5 +108,11 @@ export const navItems: NavItem[] = [
     href: "/terms",
     icon: ScrollText,
     module: "support",
+  },
+  {
+    title: "Security & 2FA",
+    href: "/security",
+    icon: ShieldCheck,
+    module: "security",
   },
 ];

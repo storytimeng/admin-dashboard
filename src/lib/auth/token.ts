@@ -1,5 +1,6 @@
 import {
   ACCESS_TOKEN_STORAGE_KEY,
+  REFRESH_TOKEN_STORAGE_KEY,
   LEGACY_COOKIE_NAME,
   LEGACY_LOCAL_STORAGE_KEYS,
 } from "./constants";
@@ -128,5 +129,21 @@ export function clearAccessToken(): void {
 
   if (typeof window !== "undefined") {
     safeLocalStorageRemove(ACCESS_TOKEN_STORAGE_KEY);
+    safeLocalStorageRemove(REFRESH_TOKEN_STORAGE_KEY);
+  }
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const val = safeLocalStorageGet(REFRESH_TOKEN_STORAGE_KEY);
+  return val?.trim() || null;
+}
+
+export function setRefreshToken(token: string | null | undefined): void {
+  if (typeof window === "undefined") return;
+  if (token?.trim()) {
+    safeLocalStorageSet(REFRESH_TOKEN_STORAGE_KEY, token.trim());
+  } else {
+    safeLocalStorageRemove(REFRESH_TOKEN_STORAGE_KEY);
   }
 }

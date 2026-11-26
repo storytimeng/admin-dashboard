@@ -1,15 +1,22 @@
 import { apiRequest, ApiError } from "@/lib/api/client";
-import type { AdminLoginResponse, AdminUser } from "@/types/admin";
+import type {
+  AdminAuthSessionResponse,
+  AdminLoginResponse,
+  AdminTwoFactorChallenge,
+  AdminUser,
+} from "@/types/admin";
 import {
   clearAccessToken,
   extractAccessToken,
   getAccessToken,
   purgeLegacyAuthStorage,
   setAccessToken,
+  setRefreshToken,
 } from "./token";
 
-function parseLoginResponse(raw: AdminLoginResponse): {
+function parseSessionResponse(raw: AdminAuthSessionResponse): {
   accessToken: string;
+  refreshToken?: string;
   admin: AdminUser;
 } {
   const accessToken = extractAccessToken(raw.access_token);
@@ -24,7 +31,7 @@ function parseLoginResponse(raw: AdminLoginResponse): {
     throw new ApiError("Login response did not include admin profile", 500);
   }
 
-  return { accessToken, admin: raw.admin };
+  return { accessToken, refreshToken: raw.refresh_token, admin: raw.admin };
 }
 
 export class AdminAuthService {
@@ -36,18 +43,76 @@ export class AdminAuthService {
     return getAccessToken() !== null;
   }
 
-  async login(email: string, password: string): Promise<AdminUser> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<
+    | { requiresTwoFactor: true; challenge: AdminTwoFactorChallenge }
+    | { requiresTwoFactor: false; admin: AdminUser }
+  > {
     const response = await apiRequest<AdminLoginResponse>("admin/login", {
       method: "POST",
       body: { email, password },
       auth: false,
     });
 
-    const { accessToken } = parseLoginResponse(response);
+    if ("requiresTwoFactor" in response && response.requiresTwoFactor) {
+      return { requiresTwoFactor: true, challenge: response };
+    }
+
+    const { accessToken, refreshToken } = parseSessionResponse(
+      response as AdminAuthSessionResponse,
+    );
     setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
 
     const profile = await this.getProfile(accessToken);
-    return profile;
+    return { requiresTwoFactor: false, admin: profile };
+  }
+
+  async sendTwoFactorEmail(
+    challengeToken: string,
+    mode: "email_otp" | "email_link",
+  ): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>("admin/auth/2fa/send-email", {
+      method: "POST",
+      body: { challengeToken, mode },
+      auth: false,
+    });
+  }
+
+  async verifyTwoFactor(
+    challengeToken: string,
+    code: string,
+    method: "totp" | "email_otp",
+  ): Promise<AdminUser> {
+    const response = await apiRequest<AdminAuthSessionResponse>(
+      "admin/auth/2fa/verify",
+      {
+        method: "POST",
+        body: { challengeToken, code, method },
+        auth: false,
+      },
+    );
+    const { accessToken, refreshToken } = parseSessionResponse(response);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+    return this.getProfile(accessToken);
+  }
+
+  async verifyMagicLink(token: string): Promise<AdminUser> {
+    const response = await apiRequest<AdminAuthSessionResponse>(
+      "admin/auth/2fa/verify-link",
+      {
+        method: "POST",
+        body: { token },
+        auth: false,
+      },
+    );
+    const { accessToken, refreshToken } = parseSessionResponse(response);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+    return this.getProfile(accessToken);
   }
 
   async getProfile(accessToken?: string): Promise<AdminUser> {
@@ -71,7 +136,7 @@ export class AdminAuthService {
   async logout(): Promise<void> {
     try {
       if (getAccessToken()) {
-        await apiRequest<{ message: string }>("auth/logout", {
+        await apiRequest<{ message: string }>("admin/auth/logout", {
           method: "POST",
           auth: true,
           silent: true,

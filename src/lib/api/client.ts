@@ -1,5 +1,12 @@
 import { toast } from "sonner";
-import { getAccessToken, isAccessToken } from "@/lib/auth/token";
+import {
+  clearAccessToken,
+  getAccessToken,
+  getRefreshToken,
+  isAccessToken,
+  setAccessToken,
+  setRefreshToken,
+} from "@/lib/auth/token";
 import { notifySessionExpired } from "@/lib/auth/session-events";
 
 function shouldUseProxy(): boolean {
@@ -60,8 +67,52 @@ export function isSessionAuthError(status: number, message: string): boolean {
     lower.includes("token has been revoked") ||
     lower.includes("authentication token is required") ||
     lower.includes("authentication required") ||
-    lower.includes("not authenticated")
+    lower.includes("not authenticated") ||
+    lower.includes("session has been revoked") ||
+    lower.includes("session expired")
   );
+}
+
+let inFlightRefresh: Promise<string | null> | null = null;
+
+async function tryRefreshAdminToken(): Promise<string | null> {
+  if (inFlightRefresh) return inFlightRefresh;
+
+  inFlightRefresh = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return null;
+    try {
+      const url = `${getApiBase()}/admin/auth/refresh`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) {
+        clearAccessToken();
+        return null;
+      }
+      const parsed = await res.json();
+      const payload = parsed?.data ?? parsed;
+      if (payload?.access_token) {
+        setAccessToken(payload.access_token);
+        if (payload.refresh_token) {
+          setRefreshToken(payload.refresh_token);
+        }
+        return payload.access_token as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      inFlightRefresh = null;
+    }
+  })();
+
+  return inFlightRefresh;
 }
 
 type RequestOptions = {
@@ -73,6 +124,7 @@ type RequestOptions = {
   silent?: boolean;
   signOutOnUnauthorized?: boolean;
   headers?: Record<string, string>;
+  skipRefresh?: boolean;
 };
 
 export async function apiRequest<T>(
@@ -87,6 +139,7 @@ export async function apiRequest<T>(
     silent = false,
     signOutOnUnauthorized = false,
     headers = {},
+    skipRefresh = false,
   } = options;
 
   const url = `${getApiBase()}/${path.replace(/^\//, "")}`;
@@ -178,6 +231,23 @@ export async function apiRequest<T>(
 
     if (typeof message !== "string") {
       message = String(message);
+    }
+
+    if (
+      response.status === 401 &&
+      auth &&
+      !skipRefresh &&
+      getRefreshToken()
+    ) {
+      const nextToken = await tryRefreshAdminToken();
+      if (nextToken) {
+        return apiRequest<T>(path, {
+          ...options,
+          accessToken: nextToken,
+          skipRefresh: true,
+        });
+      }
+      notifySessionExpired();
     }
 
     if (

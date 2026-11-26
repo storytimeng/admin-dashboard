@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -59,9 +59,9 @@ export function AdminHeader() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                <User className="mr-2 size-4" />
-                Profile
+              <DropdownMenuItem onClick={() => router.push("/security")}>
+                <ShieldCheck className="mr-2 size-4" />
+                Security &amp; 2FA
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
