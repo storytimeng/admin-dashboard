@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { compressImageFile } from "../compress-image";
 import type {
   AdminComment,
   AdminCommentType,
@@ -706,15 +707,10 @@ export const adminApi = {
       { method: "POST", body: reason ? { reason } : {} },
     ),
 
-  uploadAdminImage: (file: File, folder?: string) => {
-    const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-    if (file.size > MAX_IMAGE_BYTES) {
-      return Promise.reject(
-        new Error("Image file size must be 2MB or less."),
-      );
-    }
+  uploadAdminImage: async (file: File, folder?: string) => {
+    const compressedFile = await compressImageFile(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressedFile);
     const qs = folder ? `?folder=${encodeURIComponent(folder)}` : "";
     return apiRequest<{ message: string; imageUrl: string; publicId: string }>(
       `admin/upload-image${qs}`,
