@@ -252,7 +252,7 @@ export async function apiRequest<T>(
 
     if (
       auth &&
-      signOutOnUnauthorized &&
+      (signOutOnUnauthorized || isSessionAuthError(response.status, message)) &&
       isSessionAuthError(response.status, message)
     ) {
       notifySessionExpired();

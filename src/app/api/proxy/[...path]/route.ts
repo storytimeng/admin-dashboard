@@ -100,9 +100,28 @@ async function proxyRequest(
     headers["Content-Type"] = contentType;
   }
 
+  const forwardHeaders = [
+    "user-agent",
+    "origin",
+    "x-forwarded-for",
+    "x-real-ip",
+    "x-vercel-ip-city",
+    "x-vercel-ip-country-region",
+    "x-vercel-ip-country",
+    "cf-ipcountry",
+    "cf-ipcity",
+  ];
+  for (const name of forwardHeaders) {
+    const val = request.headers.get(name);
+    if (val) {
+      headers[name] = val;
+    }
+  }
+
   try {
-    const isAnalytics = apiPath.startsWith("admin/analytics");
-    const timeoutMs = isAnalytics ? 60000 : 30000;
+    const isLongRunning =
+      apiPath.startsWith("admin/analytics") || apiPath.startsWith("admin/audio");
+    const timeoutMs = isLongRunning ? 120000 : 30000;
 
     const response = await fetch(fullUrl, {
       method,
