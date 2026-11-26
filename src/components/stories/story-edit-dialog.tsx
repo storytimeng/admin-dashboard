@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -204,11 +204,23 @@ export function StoryEditDialog({
                 </Button>
               </div>
               {form.imageUrl ? (
-                <img
-                  src={form.imageUrl}
-                  alt="Cover preview"
-                  className="mt-2 border rounded-md w-18 h-24 object-cover"
-                />
+                <div className="mt-2 flex items-end gap-3">
+                  <img
+                    src={form.imageUrl}
+                    alt="Cover preview"
+                    className="border rounded-md w-18 h-24 object-cover"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setForm((f) => ({ ...f, imageUrl: "" }))}
+                  >
+                    <Trash2 className="mr-1.5 size-3.5" />
+                    Remove image
+                  </Button>
+                </div>
               ) : null}
             </div>
           </div>

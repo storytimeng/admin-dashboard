@@ -87,6 +87,7 @@ export interface AppUser {
   firstName?: string | null;
   lastName?: string | null;
   avatar?: string | null;
+  profilePicture?: string | null;
   isSuspended?: boolean;
   isPremium?: boolean;
   isEmailVerified?: boolean;
@@ -228,6 +229,7 @@ export interface AdminStory {
     firstName?: string | null;
     lastName?: string | null;
     avatar?: string | null;
+  profilePicture?: string | null;
   } | null;
   authorId?: string;
   createdAt?: string;
@@ -843,6 +845,7 @@ export interface AmbassadorLeaderboardItem {
     lastName: string;
     penName?: string | null;
     avatar?: string | null;
+  profilePicture?: string | null;
   } | null;
 }
 

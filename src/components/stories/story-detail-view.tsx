@@ -8,6 +8,8 @@ import {
   BookOpen,
   Eye,
   Heart,
+  ImagePlus,
+  Loader2,
   MessageSquare,
   Mic,
   Pencil,
@@ -34,7 +36,7 @@ import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
 import { ChapterEditDialog } from "@/components/content/chapter-edit-dialog";
 import { EpisodeEditDialog } from "@/components/content/episode-edit-dialog";
 import { StoryAudioStudio } from "@/components/narration/story-audio-studio";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function HtmlBlock({ html, label }: { html?: string | null; label: string }) {
   if (!html?.trim()) {
@@ -105,6 +107,40 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
     "suspend" | "unsuspend" | "delete" | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [coverUpdating, setCoverUpdating] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleQuickCoverUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverUpdating(true);
+    try {
+      const uploaded = await adminApi.uploadAdminImage(file, "story-covers");
+      await adminApi.updateStory(storyId, { imageUrl: uploaded.imageUrl });
+      toast.success("Story cover image updated");
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update cover");
+    } finally {
+      setCoverUpdating(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleDeleteCover = async () => {
+    setCoverUpdating(true);
+    try {
+      await adminApi.deleteStoryImage(storyId);
+      toast.success("Story cover image deleted");
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete cover");
+    } finally {
+      setCoverUpdating(false);
+    }
+  };
 
   const {
     data: story,
@@ -248,24 +284,60 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-        {story.imageUrl ? (
-          <div className="overflow-hidden rounded-xl border bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={story.imageUrl}
-              alt={story.title}
-              className="aspect-[3/4] w-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "";
-                e.currentTarget.alt = "Cover unavailable";
-              }}
-            />
+        <div className="space-y-2">
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={handleQuickCoverUpload}
+          />
+          {story.imageUrl ? (
+            <div className="overflow-hidden rounded-xl border bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={story.imageUrl}
+                alt={story.title}
+                className="aspect-[3/4] w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "";
+                  e.currentTarget.alt = "Cover unavailable";
+                }}
+              />
+            </div>
+          ) : (
+            <div className="flex aspect-[3/4] items-center justify-center rounded-xl border bg-muted text-muted-foreground">
+              <BookOpen className="size-10 opacity-40" />
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={() => coverInputRef.current?.click()}
+              disabled={coverUpdating}
+            >
+              {coverUpdating ? (
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              ) : (
+                <ImagePlus className="mr-1.5 size-3.5" />
+              )}
+              {story.imageUrl ? "Change" : "Upload"}
+            </Button>
+            {story.imageUrl ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={handleDeleteCover}
+                disabled={coverUpdating}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            ) : null}
           </div>
-        ) : (
-          <div className="flex aspect-[3/4] items-center justify-center rounded-xl border bg-muted text-muted-foreground">
-            <BookOpen className="size-10 opacity-40" />
-          </div>
-        )}
+        </div>
 
         <Card>
           <CardHeader>

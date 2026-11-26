@@ -704,14 +704,33 @@ export const adminApi = {
       { method: "POST", body: reason ? { reason } : {} },
     ),
 
-  uploadAdminImage: (file: File) => {
+  uploadAdminImage: (file: File, folder?: string) => {
     const formData = new FormData();
     formData.append("file", file);
+    const qs = folder ? `?folder=${encodeURIComponent(folder)}` : "";
     return apiRequest<{ message: string; imageUrl: string; publicId: string }>(
-      "admin/upload-image",
+      `admin/upload-image${qs}`,
       { method: "POST", body: formData },
     );
   },
+
+  updateUserAvatar: (userId: string, avatarUrl: string | null) =>
+    apiRequest<{ message: string; user: AppUser }>(
+      `admin/users/${userId}/avatar`,
+      { method: "PATCH", body: { avatarUrl } },
+    ),
+
+  deleteUserAvatar: (userId: string) =>
+    apiRequest<{ message: string; user: AppUser }>(
+      `admin/users/${userId}/avatar`,
+      { method: "DELETE" },
+    ),
+
+  deleteStoryImage: (storyId: string) =>
+    apiRequest<{ message: string; story: AdminStory }>(
+      `admin/stories/${storyId}/image`,
+      { method: "DELETE" },
+    ),
 
   getStoryAudioStudio: (storyId: string, voice?: string) => {
     const qs = voice ? `?voice=${encodeURIComponent(voice)}` : "";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import {
   ArrowLeft,
@@ -10,10 +10,13 @@ import {
   BookOpen,
   Crown,
   Heart,
+  ImagePlus,
   KeyRound,
+  Loader2,
   MessageSquare,
   Pencil,
   Trash2,
+  User as UserIcon,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -70,6 +73,44 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
     "suspend" | "unsuspend" | "delete" | "reset-password" | null
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [avatarUpdating, setAvatarUpdating] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAvatarUpdating(true);
+    try {
+      const uploaded = await adminApi.uploadAdminImage(file, "users/avatars");
+      await adminApi.updateUserAvatar(userId, uploaded.imageUrl);
+      toast.success("User profile photo updated");
+      await mutate();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update profile photo",
+      );
+    } finally {
+      setAvatarUpdating(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    setAvatarUpdating(true);
+    try {
+      await adminApi.deleteUserAvatar(userId);
+      toast.success("User profile photo removed");
+      await mutate();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove profile photo",
+      );
+    } finally {
+      setAvatarUpdating(false);
+    }
+  };
 
   const { data, isLoading, error, mutate } = useProtectedSWR(
     ["admin-user", userId],
@@ -179,6 +220,62 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </div>
         }
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4">
+        <div className="flex items-center gap-4">
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
+          {user.profilePicture || user.avatar ? (
+            <img
+              src={user.profilePicture || user.avatar || ""}
+              alt={displayName}
+              className="size-16 rounded-full border object-cover"
+            />
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+              <UserIcon className="size-7 opacity-50" />
+            </div>
+          )}
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Profile Photo</p>
+            <p className="text-xs text-muted-foreground">
+              Upload a replacement photo or remove the current avatar.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarUpdating}
+          >
+            {avatarUpdating ? (
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="mr-1.5 size-3.5" />
+            )}
+            {user.profilePicture || user.avatar ? "Change photo" : "Upload photo"}
+          </Button>
+          {user.profilePicture || user.avatar ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              onClick={handleDeleteAvatar}
+              disabled={avatarUpdating}
+            >
+              <Trash2 className="mr-1.5 size-3.5" />
+              Remove photo
+            </Button>
+          ) : null}
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {user.isPremium ? (
