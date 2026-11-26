@@ -5,6 +5,7 @@ import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
 import {
   SerialNumberCell,
@@ -63,6 +64,8 @@ export default function TermsPage() {
     type: "terms",
   });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TermsItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const items = data ?? [];
 
@@ -209,17 +212,7 @@ export default function TermsPage() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={async () => {
-                          try {
-                            await adminApi.deleteTerms(item.id);
-                            toast.success("Deleted");
-                            await mutate();
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error ? err.message : "Failed",
-                            );
-                          }
-                        }}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         Delete
                       </Button>
@@ -304,6 +297,31 @@ export default function TermsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeleteTarget(null);
+        }}
+        title="Delete Policy Document?"
+        description={`Are you sure you want to delete "${deleteTarget?.title ?? "this document"}"?`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleting(true);
+          try {
+            await adminApi.deleteTerms(deleteTarget.id);
+            toast.success("Deleted");
+            setDeleteTarget(null);
+            await mutate();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed");
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }

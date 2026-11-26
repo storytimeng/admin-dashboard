@@ -109,7 +109,7 @@ export const adminApi = {
   sendPasswordResetEmail: (email: string) =>
     apiRequest<{ message: string }>("auth/forgot-password", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      body: { email },
     }),
 
   getDeletionRequests: () =>
@@ -131,10 +131,15 @@ export const adminApi = {
     page?: number;
     limit?: number;
     genres?: string[];
+    search?: string;
+    status?: string;
   }) => {
     const search = new URLSearchParams();
     if (params?.page) search.set("page", String(params.page));
     if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.search?.trim()) search.set("search", params.search.trim());
+    if (params?.status && params.status !== "all")
+      search.set("status", params.status);
     params?.genres?.forEach((g) => search.append("genres", g));
     const qs = search.toString();
     return apiRequest<{

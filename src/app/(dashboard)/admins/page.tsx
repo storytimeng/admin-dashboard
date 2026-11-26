@@ -47,6 +47,8 @@ import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 const ROLES: AdminRole[] = [
   "super_admin",
   "admin",
+  "content_moderator",
+  "support",
   "marketing",
   "developer",
   "designer",

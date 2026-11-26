@@ -86,7 +86,7 @@ export default function DeletionRequestsPage() {
               : `${users.length} pending request${users.length !== 1 ? "s" : ""}`}
           </p>
           {users.length > 0 && (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

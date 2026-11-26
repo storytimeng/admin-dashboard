@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, MoreHorizontal, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -35,15 +42,45 @@ import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
 
 const DEFAULT_PAGE_SIZE = 20;
 
-export default function StoriesPage() {
+function StoriesPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialGenre = searchParams.get("genre") || "all";
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [genreFilter, setGenreFilter] = useState(initialGenre);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    setGenreFilter(searchParams.get("genre") || "all");
+    setPage(1);
+  }, [searchParams]);
+
+  const { data: genresData } = useProtectedSWR("admin-genres-filter", () =>
+    adminApi.getGenres().catch(() => [] as string[]),
+  );
+  const availableGenres: string[] = Array.isArray(genresData)
+    ? genresData
+    : ((genresData as { genres?: string[] } | undefined)?.genres ?? []);
 
   const { data, error, isLoading, mutate } = useProtectedSWR(
-    ["admin-stories", page, pageSize],
-    () => adminApi.getStories({ page, limit: pageSize }),
+    ["admin-stories", page, pageSize, debouncedSearch, genreFilter, statusFilter],
+    () =>
+      adminApi.getStories({
+        page,
+        limit: pageSize,
+        search: debouncedSearch || undefined,
+        genres: genreFilter !== "all" ? [genreFilter] : undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      }),
   );
 
   const [confirm, setConfirm] = useState<{
@@ -53,20 +90,11 @@ export default function StoriesPage() {
   const [editingStory, setEditingStory] = useState<AdminStory | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const stories = useMemo(() => {
-    const list = data?.stories ?? [];
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (s) =>
-        s.title?.toLowerCase().includes(q) ||
-        s.author?.penName?.toLowerCase().includes(q),
-    );
-  }, [data?.stories, search]);
+  const stories = data?.stories ?? [];
 
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [debouncedSearch, genreFilter, statusFilter]);
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
@@ -106,14 +134,47 @@ export default function StoriesPage() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search title or author on this page…"
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search title, description, or author…"
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Select
+            value={genreFilter}
+            onValueChange={(v) => setGenreFilter(v ?? "all")}
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="All Genres" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Genres</SelectItem>
+              {availableGenres.map((g) => (
+                <SelectItem key={g} value={g}>
+                  {g}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v ?? "all")}
+          >
+            <SelectTrigger className="w-[155px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="complete">Completed</SelectItem>
+              <SelectItem value="ongoing">Ongoing</SelectItem>
+              <SelectItem value="drafts">Drafts</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {!isLoading && total > 0 ? (
           <p className="text-sm text-muted-foreground whitespace-nowrap">
@@ -309,5 +370,13 @@ export default function StoriesPage() {
         onSaved={() => mutate()}
       />
     </div>
+  );
+}
+
+export default function StoriesPage() {
+  return (
+    <Suspense fallback={null}>
+      <StoriesPageContent />
+    </Suspense>
   );
 }

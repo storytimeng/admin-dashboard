@@ -5,6 +5,7 @@ import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
 import {
   SerialNumberCell,
@@ -79,6 +80,8 @@ export default function SupportPage() {
   const [editing, setEditing] = useState<SupportItem | null>(null);
   const [form, setForm] = useState<SupportForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SupportItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const items = data ?? [];
 
@@ -200,17 +203,7 @@ export default function SupportPage() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={async () => {
-                          try {
-                            await adminApi.deleteSupport(item.id);
-                            toast.success("Deleted");
-                            await mutate();
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error ? err.message : "Failed",
-                            );
-                          }
-                        }}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         Delete
                       </Button>
@@ -311,6 +304,31 @@ export default function SupportPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeleteTarget(null);
+        }}
+        title="Delete Support Contact?"
+        description={`Are you sure you want to delete "${deleteTarget?.email ?? "this contact"}"?`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleting(true);
+          try {
+            await adminApi.deleteSupport(deleteTarget.id);
+            toast.success("Deleted");
+            setDeleteTarget(null);
+            await mutate();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed");
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }

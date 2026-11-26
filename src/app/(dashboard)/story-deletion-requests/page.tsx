@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +44,7 @@ const STATUS_LABELS: Record<StoryDeletionRequestStatus, { label: string; variant
 
 export default function StoryDeletionRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<StoryDeletionRequestStatus | "all">("all");
+  const [approveTarget, setApproveTarget] = useState<StoryDeletionRequestItem | null>(null);
   const [rejectTarget, setRejectTarget] = useState<StoryDeletionRequestItem | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isActioning, setIsActioning] = useState<string | null>(null);
@@ -139,7 +141,7 @@ export default function StoryDeletionRequestsPage() {
       )}
 
       {requests.length > 0 && (
-        <div className="rounded-lg border">
+        <div className="rounded-lg border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -183,7 +185,7 @@ export default function StoryDeletionRequestsPage() {
                           size="sm"
                           variant="destructive"
                           disabled={isActioning === req.id}
-                          onClick={() => handleApprove(req)}
+                          onClick={() => setApproveTarget(req)}
                         >
                           <CheckCircle className="mr-1 h-3.5 w-3.5" />
                           Approve &amp; Delete
@@ -212,6 +214,24 @@ export default function StoryDeletionRequestsPage() {
           </Table>
         </div>
       )}
+
+      {/* Approve & Delete confirmation */}
+      <ConfirmDialog
+        open={!!approveTarget}
+        onOpenChange={(open) => {
+          if (!open) setApproveTarget(null);
+        }}
+        title="Approve & Delete Story?"
+        description={`This will permanently delete "${approveTarget?.story?.title ?? "this story"}" and cannot be undone.`}
+        confirmLabel="Approve & Delete"
+        destructive
+        loading={isActioning === approveTarget?.id}
+        onConfirm={async () => {
+          if (!approveTarget) return;
+          await handleApprove(approveTarget);
+          setApproveTarget(null);
+        }}
+      />
 
       {/* Reject modal */}
       <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) { setRejectTarget(null); setRejectReason(""); } }}>

@@ -5,6 +5,7 @@ import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Eye, Loader2, Mail, Pencil, PowerOff, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
 import {
   SerialNumberCell,
@@ -81,6 +82,7 @@ export default function EmailTemplatesPage() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [syncing, setSyncing] = useState(false);
   const [bulkToggling, setBulkToggling] = useState(false);
+  const [confirmDisableAll, setConfirmDisableAll] = useState(false);
 
   const allActive = templates.length > 0 && templates.every((t) => t.isActive);
   const anyActive = templates.some((t) => t.isActive);
@@ -282,7 +284,7 @@ export default function EmailTemplatesPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => bulkToggle(false)}
+              onClick={() => setConfirmDisableAll(true)}
               disabled={bulkToggling || isLoading}
             >
               {bulkToggling ? (
@@ -636,6 +638,19 @@ export default function EmailTemplatesPage() {
           />
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmDisableAll}
+        onOpenChange={setConfirmDisableAll}
+        title="Disable All Automated Emails?"
+        description="No automated emails (onboarding, reminders, milestones, or security alerts) will be sent until you re-enable them."
+        confirmLabel="Disable All"
+        destructive
+        loading={bulkToggling}
+        onConfirm={async () => {
+          await bulkToggle(false);
+          setConfirmDisableAll(false);
+        }}
+      />
     </div>
   );
 }

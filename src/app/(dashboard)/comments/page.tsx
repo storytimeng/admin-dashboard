@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { formatDistanceToNow } from "date-fns";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
@@ -44,6 +46,7 @@ export default function CommentsPage() {
   );
 
   const [filter, setFilter] = useState<CommentFilter>("all");
+  const [search, setSearch] = useState("");
   const [editingComment, setEditingComment] = useState<AdminComment | null>(
     null,
   );
@@ -53,9 +56,20 @@ export default function CommentsPage() {
   const comments = data?.comments ?? [];
 
   const filteredComments = useMemo(() => {
-    if (filter === "all") return comments;
-    return comments.filter((c) => (c.type ?? "story") === filter);
-  }, [comments, filter]);
+    const byType =
+      filter === "all"
+        ? comments
+        : comments.filter((c) => (c.type ?? "story") === filter);
+    const q = search.trim().toLowerCase();
+    if (!q) return byType;
+    return byType.filter(
+      (c) =>
+        c.content?.toLowerCase().includes(q) ||
+        c.user?.penName?.toLowerCase().includes(q) ||
+        c.user?.email?.toLowerCase().includes(q) ||
+        c.story?.title?.toLowerCase().includes(q),
+    );
+  }, [comments, filter, search]);
 
   const counts = useMemo(
     () => ({
@@ -105,12 +119,23 @@ export default function CommentsPage() {
         value={filter}
         onValueChange={(v) => v && setFilter(v as CommentFilter)}
       >
-        <TabsList>
-          <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-          <TabsTrigger value="story">Story ({counts.story})</TabsTrigger>
-          <TabsTrigger value="episode">Episode ({counts.episode})</TabsTrigger>
-          <TabsTrigger value="chapter">Chapter ({counts.chapter})</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <TabsList>
+            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+            <TabsTrigger value="story">Story ({counts.story})</TabsTrigger>
+            <TabsTrigger value="episode">Episode ({counts.episode})</TabsTrigger>
+            <TabsTrigger value="chapter">Chapter ({counts.chapter})</TabsTrigger>
+          </TabsList>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search comments, authors, stories…"
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
 
         <TabsContent value={filter} className="mt-4 space-y-4">
           {error ? (

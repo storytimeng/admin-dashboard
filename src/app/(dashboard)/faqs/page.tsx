@@ -5,6 +5,7 @@ import { useProtectedSWR } from "@/hooks/use-protected-swr";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TablePagination } from "@/components/shared/table-pagination";
 import {
   SerialNumberCell,
@@ -59,6 +60,8 @@ export default function FaqsPage() {
   const [editing, setEditing] = useState<FaqItem | null>(null);
   const [form, setForm] = useState<FaqForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<FaqItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const items = useMemo(() => {
     const list = data ?? [];
@@ -218,17 +221,7 @@ export default function FaqsPage() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={async () => {
-                          try {
-                            await adminApi.deleteFaq(item.id);
-                            toast.success("Deleted");
-                            await mutate();
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error ? err.message : "Failed",
-                            );
-                          }
-                        }}
+                        onClick={() => setDeleteTarget(item)}
                       >
                         Delete
                       </Button>
@@ -323,6 +316,31 @@ export default function FaqsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeleteTarget(null);
+        }}
+        title="Delete FAQ?"
+        description={`Are you sure you want to delete "${deleteTarget?.question ?? "this FAQ"}"?`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleting(true);
+          try {
+            await adminApi.deleteFaq(deleteTarget.id);
+            toast.success("Deleted");
+            setDeleteTarget(null);
+            await mutate();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed");
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }

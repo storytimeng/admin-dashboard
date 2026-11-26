@@ -203,7 +203,7 @@ export default function PopularitySettingsPage() {
                   onValueChange={(v) => setSelectedPreset(v ?? "")}
                   disabled={!effectiveEnabled}
                 >
-                  <SelectTrigger className="w-72">
+                  <SelectTrigger className="w-full max-w-xs">
                     <SelectValue placeholder="Choose a preset…" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,7 +223,7 @@ export default function PopularitySettingsPage() {
                   <Label htmlFor="cron">Custom Cron Expression</Label>
                   <Input
                     id="cron"
-                    className="w-72 font-mono"
+                    className="w-full max-w-xs font-mono"
                     placeholder="0 0 * * 1"
                     value={customCron}
                     onChange={(e) => setCustomCron(e.target.value)}

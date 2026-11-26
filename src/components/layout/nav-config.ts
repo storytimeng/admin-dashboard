@@ -23,7 +23,15 @@ import {
   BarChart3,
 } from "lucide-react";
 
-export type NavModule = "core" | "subscriptions" | "email" | "content";
+export type NavModule =
+  | "analytics"
+  | "moderation"
+  | "users"
+  | "admins"
+  | "subscriptions"
+  | "email"
+  | "support"
+  | "system";
 
 export interface NavItem {
   title: string;
@@ -33,39 +41,39 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard, module: "core" },
+  { title: "Dashboard", href: "/", icon: LayoutDashboard, module: "analytics" },
   {
     title: "Google Analytics",
     href: "/google-analytics",
     icon: BarChart3,
-    module: "core",
+    module: "analytics",
   },
-  { title: "Narration", href: "/narration", icon: Mic, module: "core" },
-  { title: "Stories", href: "/stories", icon: BookOpen, module: "core" },
-  { title: "Genres", href: "/genres", icon: Tag, module: "core" },
+  { title: "Narration", href: "/narration", icon: Mic, module: "moderation" },
+  { title: "Stories", href: "/stories", icon: BookOpen, module: "moderation" },
+  { title: "Genres", href: "/genres", icon: Tag, module: "moderation" },
   {
     title: "Popularity",
     href: "/popularity",
     icon: TrendingUp,
-    module: "core",
+    module: "system",
   },
-  { title: "Episodes", href: "/episodes", icon: Layers, module: "core" },
-  { title: "Chapters", href: "/chapters", icon: FileText, module: "core" },
-  { title: "Users", href: "/users", icon: Users, module: "core" },
+  { title: "Episodes", href: "/episodes", icon: Layers, module: "moderation" },
+  { title: "Chapters", href: "/chapters", icon: FileText, module: "moderation" },
+  { title: "Users", href: "/users", icon: Users, module: "users" },
   {
     title: "Deletion Requests",
     href: "/deletion-requests",
     icon: Trash2,
-    module: "core",
+    module: "support",
   },
   {
     title: "Story Removals",
     href: "/story-deletion-requests",
     icon: BookX,
-    module: "core",
+    module: "moderation",
   },
-  { title: "Ambassadors", href: "/ambassadors", icon: Star, module: "core" },
-  { title: "Admins", href: "/admins", icon: Shield, module: "core" },
+  { title: "Ambassadors", href: "/ambassadors", icon: Star, module: "email" },
+  { title: "Admins", href: "/admins", icon: Shield, module: "admins" },
   {
     title: "Subscriptions",
     href: "/subscriptions",
@@ -82,21 +90,21 @@ export const navItems: NavItem[] = [
     title: "Notifications",
     href: "/notifications",
     icon: Bell,
-    module: "core",
+    module: "email",
   },
-  { title: "Comments", href: "/comments", icon: MessageSquare, module: "core" },
+  { title: "Comments", href: "/comments", icon: MessageSquare, module: "moderation" },
   {
     title: "Email Templates",
     href: "/email-templates",
     icon: Mail,
     module: "email",
   },
-  { title: "FAQs", href: "/faqs", icon: HelpCircle, module: "content" },
-  { title: "Support", href: "/support", icon: Headphones, module: "content" },
+  { title: "FAQs", href: "/faqs", icon: HelpCircle, module: "support" },
+  { title: "Support", href: "/support", icon: Headphones, module: "support" },
   {
     title: "Terms & Policy",
     href: "/terms",
     icon: ScrollText,
-    module: "content",
+    module: "support",
   },
 ];
