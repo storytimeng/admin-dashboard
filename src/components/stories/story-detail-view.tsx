@@ -9,6 +9,7 @@ import {
   Eye,
   Heart,
   MessageSquare,
+  Mic,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -23,8 +24,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { adminApi } from "@/lib/api/admin";
 import { moderationActionMessage } from "@/lib/moderation-action-message";
-import type { AdminStoryDetail, StoryCommentDetail } from "@/types/admin";
+import type {
+  AdminChapter,
+  AdminEpisode,
+  AdminStoryDetail,
+  StoryCommentDetail,
+} from "@/types/admin";
 import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
+import { ChapterEditDialog } from "@/components/content/chapter-edit-dialog";
+import { EpisodeEditDialog } from "@/components/content/episode-edit-dialog";
+import { StoryAudioStudio } from "@/components/narration/story-audio-studio";
 import { useState } from "react";
 
 function HtmlBlock({ html, label }: { html?: string | null; label: string }) {
@@ -86,6 +95,12 @@ interface StoryDetailViewProps {
 export function StoryDetailView({ storyId }: StoryDetailViewProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [editingChapter, setEditingChapter] = useState<AdminChapter | null>(
+    null,
+  );
+  const [editingEpisode, setEditingEpisode] = useState<AdminEpisode | null>(
+    null,
+  );
   const [confirmAction, setConfirmAction] = useState<
     "suspend" | "unsuspend" | "delete" | null
   >(null);
@@ -361,6 +376,10 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
           <TabsTrigger value="comments">
             Comments ({comments?.length ?? story.commentCount ?? 0})
           </TabsTrigger>
+          <TabsTrigger value="narration" className="gap-1.5">
+            <Mic className="size-3.5" />
+            Narration Studio
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="content" className="mt-4">
@@ -375,10 +394,33 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
           <TabsContent value="chapters" className="mt-4 space-y-4">
             {chapters.map((ch) => (
               <Card key={ch.id}>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                   <CardTitle className="text-base">
                     Ch. {ch.chapterNumber}: {ch.title}
                   </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEditingChapter({
+                          ...ch,
+                          storyId: story.id,
+                          storyTitle: story.title,
+                        })
+                      }
+                    >
+                      <Pencil className="mr-1.5 size-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      render={<Link href={`/chapters/${ch.id}`} />}
+                    >
+                      Open
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <HtmlBlock html={ch.content} label="chapter content" />
@@ -392,10 +434,33 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
           <TabsContent value="episodes" className="mt-4 space-y-4">
             {episodes.map((ep) => (
               <Card key={ep.id}>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                   <CardTitle className="text-base">
                     Ep. {ep.episodeNumber}: {ep.title}
                   </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEditingEpisode({
+                          ...ep,
+                          storyId: story.id,
+                          storyTitle: story.title,
+                        })
+                      }
+                    >
+                      <Pencil className="mr-1.5 size-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      render={<Link href={`/episodes/${ep.id}`} />}
+                    >
+                      Open
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <HtmlBlock html={ep.content} label="episode content" />
@@ -416,12 +481,33 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
             <p className="text-sm text-muted-foreground italic">No comments.</p>
           )}
         </TabsContent>
+
+        <TabsContent value="narration" className="mt-4">
+          <StoryAudioStudio
+            storyId={storyId}
+            onContentUpdated={() => mutate()}
+          />
+        </TabsContent>
       </Tabs>
 
       <StoryEditDialog
         story={story as AdminStoryDetail}
         open={editOpen}
         onOpenChange={setEditOpen}
+        onSaved={() => mutate()}
+      />
+
+      <ChapterEditDialog
+        chapter={editingChapter}
+        open={!!editingChapter}
+        onOpenChange={(open) => !open && setEditingChapter(null)}
+        onSaved={() => mutate()}
+      />
+
+      <EpisodeEditDialog
+        episode={editingEpisode}
+        open={!!editingEpisode}
+        onOpenChange={(open) => !open && setEditingEpisode(null)}
         onSaved={() => mutate()}
       />
 

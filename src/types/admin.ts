@@ -519,6 +519,64 @@ export type NarrationInventoryStatus =
   | "queued"
   | "missing";
 
+export type AdminAudioSegmentStatus =
+  | "ready"
+  | "stale"
+  | "pending"
+  | "missing"
+  | "failed";
+
+export interface AdminTtsVoice {
+  id: string;
+  name: string;
+  gender: "female" | "male";
+  locale: string;
+}
+
+export interface AdminAudioSegmentView {
+  order: number;
+  text: string;
+  url: string | null;
+  durationSeconds: number;
+  status: AdminAudioSegmentStatus;
+  errorMessage: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminAudioUnitView {
+  unitType: "story" | "chapter" | "episode";
+  storyId: string;
+  chapterId: string | null;
+  episodeId: string | null;
+  title: string;
+  orderNumber: number;
+  htmlContent: string;
+  plainText: string;
+  contentHash: string;
+  audioStatus: "pending" | "ready" | "failed" | "missing";
+  pregenStatus: string | null;
+  totalDurationSeconds: number;
+  errorMessage: string | null;
+  updatedAt: string | null;
+  expectedSegmentCount: number;
+  readySegmentCount: number;
+  staleSegmentCount: number;
+  missingSegmentCount: number;
+  failedSegmentCount: number;
+  segments: AdminAudioSegmentView[];
+}
+
+export interface AdminStoryAudioStudio {
+  storyId: string;
+  title: string;
+  storyStatus: string;
+  type: "chapters" | "episodes" | "standalone";
+  voice: string;
+  ttsConfigured: boolean;
+  availableVoices: AdminTtsVoice[];
+  units: AdminAudioUnitView[];
+}
+
 export interface AudioInventory {
   generatedAt: string;
   voice: string;

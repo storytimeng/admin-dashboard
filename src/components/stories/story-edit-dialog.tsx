@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +48,8 @@ export function StoryEditDialog({
   const [genres, setGenres] = useState<string[]>([]);
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!story) return;
@@ -72,6 +75,24 @@ export function StoryEditDialog({
     setGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
     );
+  };
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const res = await adminApi.uploadAdminImage(file);
+      setForm((f) => ({ ...f, imageUrl: res.imageUrl }));
+      toast.success("Cover image uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   };
 
   const save = async () => {
@@ -152,14 +173,43 @@ export function StoryEditDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Cover image URL</Label>
-              <Input
-                value={form.imageUrl}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, imageUrl: e.target.value }))
-                }
-                placeholder="https://…"
-              />
+              <Label>Cover image</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={form.imageUrl}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, imageUrl: e.target.value }))
+                  }
+                  placeholder="https://…"
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="mr-1.5 size-4" />
+                  )}
+                  Upload
+                </Button>
+              </div>
+              {form.imageUrl ? (
+                <img
+                  src={form.imageUrl}
+                  alt="Cover preview"
+                  className="mt-2 h-24 w-18 rounded-md border object-cover"
+                />
+              ) : null}
             </div>
           </div>
           <div className="space-y-2">

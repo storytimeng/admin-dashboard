@@ -95,7 +95,10 @@ export async function apiRequest<T>(
     ...headers,
   };
 
-  if (body !== undefined) {
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
+
+  if (body !== undefined && !isFormData) {
     requestHeaders["Content-Type"] = "application/json";
   }
 
@@ -116,7 +119,12 @@ export async function apiRequest<T>(
     response = await fetch(url, {
       method,
       headers: requestHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body:
+        body !== undefined
+          ? isFormData
+            ? (body as FormData)
+            : JSON.stringify(body)
+          : undefined,
     });
   } catch {
     const message = "Network error. Check your connection and try again.";

@@ -14,6 +14,7 @@ import {
   MetaItem,
 } from "@/components/content/html-content-block";
 import { EpisodeEditDialog } from "@/components/content/episode-edit-dialog";
+import { StoryAudioStudio } from "@/components/narration/story-audio-studio";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,6 +162,14 @@ export function EpisodeDetailView({ episodeId }: EpisodeDetailViewProps) {
           <HtmlContentBlock html={data.content} label="content" />
         </CardContent>
       </Card>
+
+      {storyId ? (
+        <StoryAudioStudio
+          storyId={storyId}
+          initialEpisodeId={episodeId}
+          onContentUpdated={() => mutate()}
+        />
+      ) : null}
 
       <EpisodeEditDialog
         episode={data}

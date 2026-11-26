@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -271,13 +272,14 @@ export function NarrationInventoryView() {
               <TableHead>Segments</TableHead>
               <TableHead>Duration</TableHead>
               <TableHead>Last updated</TableHead>
+              <TableHead className="text-right">Studio</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 8 }).map((_, index) => (
                 <TableRow key={index}>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
@@ -285,7 +287,7 @@ export function NarrationInventoryView() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-10 text-center text-muted-foreground"
                 >
                   No stories match this filter.
@@ -341,6 +343,16 @@ export function NarrationInventoryView() {
                             addSuffix: true,
                           })
                         : "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      render={<Link href={`/narration/${item.storyId}`} />}
+                    >
+                      <Mic className="mr-1.5 size-3.5" />
+                      Studio
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

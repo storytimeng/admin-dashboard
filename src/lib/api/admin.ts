@@ -10,6 +10,8 @@ import type {
   AppUser,
   AdminUserDetail,
   AudioInventory,
+  AdminAudioUnitView,
+  AdminStoryAudioStudio,
   EmailDeliveryLog,
   EmailTemplate,
   EmailTemplateSummary,
@@ -699,5 +701,62 @@ export const adminApi = {
     apiRequest<{ message: string; request: StoryDeletionRequestItem }>(
       `admin/story-deletion-requests/${id}/reject`,
       { method: "POST", body: reason ? { reason } : {} },
+    ),
+
+  uploadAdminImage: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest<{ message: string; imageUrl: string; publicId: string }>(
+      "admin/upload-image",
+      { method: "POST", body: formData },
+    );
+  },
+
+  getStoryAudioStudio: (storyId: string, voice?: string) => {
+    const qs = voice ? `?voice=${encodeURIComponent(voice)}` : "";
+    return apiRequest<{ message: string; studio: AdminStoryAudioStudio }>(
+      `admin/audio/stories/${storyId}${qs}`,
+    );
+  },
+
+  regenerateUnitAudio: (body: {
+    storyId: string;
+    chapterId?: string | null;
+    episodeId?: string | null;
+    voice?: string;
+  }) =>
+    apiRequest<{ message: string; unit: AdminAudioUnitView }>(
+      "admin/audio/regenerate",
+      { method: "POST", body },
+    ),
+
+  regenerateStoryAudio: (storyId: string, voice?: string) =>
+    apiRequest<{
+      message: string;
+      studio: AdminStoryAudioStudio;
+      results: Array<{
+        title: string;
+        chapterId: string | null;
+        episodeId: string | null;
+        status: string;
+        errorMessage: string | null;
+      }>;
+    }>(`admin/audio/stories/${storyId}/regenerate`, {
+      method: "POST",
+      body: voice ? { voice } : {},
+    }),
+
+  regenerateAudioSegment: (body: {
+    storyId: string;
+    chapterId?: string | null;
+    episodeId?: string | null;
+    voice?: string;
+    segmentOrder: number;
+    text?: string;
+    saveText?: boolean;
+  }) =>
+    apiRequest<{ message: string; unit: AdminAudioUnitView }>(
+      "admin/audio/regenerate-segment",
+      { method: "POST", body },
     ),
 };
