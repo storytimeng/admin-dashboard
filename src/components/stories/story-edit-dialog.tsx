@@ -153,7 +153,7 @@ export function StoryEditDialog({
               minHeight="min-h-[280px]"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="gap-4 grid sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
@@ -207,7 +207,7 @@ export function StoryEditDialog({
                 <img
                   src={form.imageUrl}
                   alt="Cover preview"
-                  className="mt-2 h-24 w-18 rounded-md border object-cover"
+                  className="mt-2 border rounded-md w-18 h-24 object-cover"
                 />
               ) : null}
             </div>
@@ -219,7 +219,7 @@ export function StoryEditDialog({
                 <Badge
                   key={genre}
                   variant={genres.includes(genre) ? "default" : "outline"}
-                  className="cursor-pointer capitalize"
+                  className="capitalize cursor-pointer"
                   onClick={() => toggleGenre(genre)}
                 >
                   {genre}
