@@ -22,6 +22,7 @@ import {
   Wallet,
   BarChart3,
   ShieldCheck,
+  Images,
 } from "lucide-react";
 
 export type NavModule =
@@ -51,6 +52,12 @@ export const navItems: NavItem[] = [
     module: "analytics",
   },
   { title: "Narration", href: "/narration", icon: Mic, module: "moderation" },
+  {
+    title: "Media Library",
+    href: "/media",
+    icon: Images,
+    module: "moderation",
+  },
   { title: "Stories", href: "/stories", icon: BookOpen, module: "moderation" },
   { title: "Genres", href: "/genres", icon: Tag, module: "moderation" },
   {

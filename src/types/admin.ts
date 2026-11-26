@@ -70,6 +70,61 @@ export interface AdminSecurityOverview {
   sessions: AdminSessionItem[];
 }
 
+export type MediaAssetStatus = "used" | "unused" | "expiring_soon";
+
+export interface MediaUsageRef {
+  type:
+    | "story_cover"
+    | "story_content"
+    | "chapter_content"
+    | "episode_content"
+    | "user_avatar";
+  id: string;
+  label: string;
+  href: string;
+}
+
+export interface AdminMediaItem {
+  id: string;
+  publicId: string;
+  url: string;
+  folder: string;
+  format: string | null;
+  bytes: number | null;
+  width: number | null;
+  height: number | null;
+  uploadedByUserId: string | null;
+  uploadedByAdminId: string | null;
+  uploadedByLabel: string | null;
+  createdAt: string;
+  firstUnusedAt: string | null;
+  scheduledDeleteAt: string | null;
+  extendedUntil: string | null;
+  daysLeft: number | null;
+  isUsed: boolean;
+  status: MediaAssetStatus;
+  usages: MediaUsageRef[];
+}
+
+export interface AdminMediaLibraryResponse {
+  summary: {
+    totalAssets: number;
+    totalBytes: number;
+    usedCount: number;
+    unusedCount: number;
+    expiringSoonCount: number;
+    reclaimableBytes: number;
+  };
+  folders: string[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  items: AdminMediaItem[];
+}
+
 export interface AppUserStats {
   storiesWritten: number;
   episodesWritten: number;

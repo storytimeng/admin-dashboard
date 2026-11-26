@@ -11,8 +11,10 @@ import type {
   AdminUserDetail,
   AudioInventory,
   AdminAudioUnitView,
+  AdminMediaLibraryResponse,
   AdminSecurityOverview,
   AdminStoryAudioStudio,
+  MediaAssetStatus,
   EmailDeliveryLog,
   EmailTemplate,
   EmailTemplateSummary,
@@ -705,6 +707,12 @@ export const adminApi = {
     ),
 
   uploadAdminImage: (file: File, folder?: string) => {
+    const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_IMAGE_BYTES) {
+      return Promise.reject(
+        new Error("Image file size must be 2MB or less."),
+      );
+    }
     const formData = new FormData();
     formData.append("file", file);
     const qs = folder ? `?folder=${encodeURIComponent(folder)}` : "";
@@ -824,4 +832,55 @@ export const adminApi = {
       "admin/security/sessions/revoke-others",
       { method: "POST" },
     ),
+
+  getMediaLibrary: (params?: {
+    page?: number;
+    limit?: number;
+    status?: "all" | MediaAssetStatus;
+    folder?: string;
+    search?: string;
+  }) => {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.set("page", String(params.page));
+    if (params?.limit) sp.set("limit", String(params.limit));
+    if (params?.status) sp.set("status", params.status);
+    if (params?.folder) sp.set("folder", params.folder);
+    if (params?.search?.trim()) sp.set("search", params.search.trim());
+    const qs = sp.toString();
+    return apiRequest<{ message: string; media: AdminMediaLibraryResponse }>(
+      `admin/media${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  syncMediaLibrary: () =>
+    apiRequest<{
+      message: string;
+      imported: number;
+      updated: number;
+      total: number;
+      used: number;
+      unused: number;
+    }>("admin/media/sync", { method: "POST" }),
+
+  extendMediaRetention: (ids: string[], days = 30) =>
+    apiRequest<{ message: string; updatedCount: number; daysAdded: number }>(
+      "admin/media/extend",
+      { method: "POST", body: { ids, days } },
+    ),
+
+  deleteMediaAssets: (ids: string[], force = false) =>
+    apiRequest<{
+      message: string;
+      deletedCount: number;
+      failedCount: number;
+      failedIds: string[];
+    }>("admin/media/delete", { method: "POST", body: { ids, force } }),
+
+  runMediaCleanup: () =>
+    apiRequest<{
+      message: string;
+      synced: number;
+      deletedCount: number;
+      failedCount: number;
+    }>("admin/media/cleanup", { method: "POST" }),
 };
