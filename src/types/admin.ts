@@ -1125,6 +1125,22 @@ export interface DatabaseBackupItem {
   finishedAt: string | null;
 }
 
+export type BackupSslMode = "default_ca" | "custom_ca" | "no_verify";
+
+export interface DatabaseBackupConfigInfo {
+  useCustomUrl: boolean;
+  hasCustomUrl: boolean;
+  maskedCustomUrl: string | null;
+  envConfigured: boolean;
+  envMaskedUrl: string | null;
+  sslMode: BackupSslMode;
+  customCaCert: string;
+  hasCustomCert: boolean;
+  hasDefaultCaFile: boolean;
+  updatedBy: string | null;
+  updatedAt: string | null;
+}
+
 export interface DatabaseBackupStatusResponse {
   configured: boolean;
   targetHost: string | null;
@@ -1132,6 +1148,7 @@ export interface DatabaseBackupStatusResponse {
   isRunning: boolean;
   lastBackup: DatabaseBackupItem | null;
   history: DatabaseBackupItem[];
+  config?: DatabaseBackupConfigInfo;
 }
 
 export interface PopularitySettings {

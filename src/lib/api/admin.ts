@@ -950,6 +950,18 @@ export const adminApi = {
       { method: "POST" },
     ),
 
+  updateBackupConfig: (body: {
+    useCustomUrl?: boolean;
+    customUrl?: string;
+    clearCustomUrl?: boolean;
+    sslMode?: "default_ca" | "custom_ca" | "no_verify";
+    customCaCert?: string | null;
+  }) =>
+    apiRequest<{ message: string } & DatabaseBackupStatusResponse>(
+      "admin/backups/config",
+      { method: "PATCH", body },
+    ),
+
   sendEmail2faVerification: () =>
     apiRequest<{ message: string }>("admin/security/2fa/email/send-verification", {
       method: "POST",
