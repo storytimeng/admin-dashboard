@@ -27,6 +27,7 @@ export interface AdminUser {
 export interface AdminTwoFactorChallenge {
   requiresTwoFactor: true;
   method: AdminTwoFactorMethod;
+  enabledMethods?: AdminTwoFactorMethod[];
   hasTotp: boolean;
   challengeToken: string;
   email: string;
@@ -52,6 +53,9 @@ export interface AdminSessionItem {
   deviceName: string;
   ipAddress: string | null;
   location: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  googleMapsUrl?: string | null;
   isActive: boolean;
   isCurrent: boolean;
   lastLoginAt: string;
@@ -64,10 +68,75 @@ export interface AdminSessionItem {
 export interface AdminSecurityOverview {
   twoFactorEnabled: boolean;
   twoFactorMethod: AdminTwoFactorMethod | null;
+  totpEnabled: boolean;
+  emailOtpEnabled: boolean;
+  emailLinkEnabled: boolean;
+  twoFactorEmailVerified: boolean;
   hasTotpConfigured: boolean;
   activeSessionCount: number;
   currentSessionId: string | null;
   sessions: AdminSessionItem[];
+}
+
+export type MailProviderType =
+  | "zepto"
+  | "google_smtp"
+  | "resend"
+  | "sendgrid"
+  | "mailgun"
+  | "brevo"
+  | "postmark"
+  | "custom_smtp";
+
+export interface MailProviderPreset {
+  label: string;
+  mode: "smtp" | "api";
+  defaultHost?: string;
+  defaultPort?: number;
+  defaultSecure?: boolean;
+  hint: string;
+}
+
+export interface MailProviderItem {
+  id: string;
+  name: string;
+  providerType: MailProviderType;
+  isEnabled: boolean;
+  isDefault: boolean;
+  isFallback: boolean;
+  fromEmail: string | null;
+  fromName: string | null;
+  smtpHost: string | null;
+  smtpPort: number | null;
+  smtpSecure: boolean;
+  smtpUser: string | null;
+  hasPassword: boolean;
+  hasApiKey: boolean;
+  lastTestedAt: string | null;
+  lastTestStatus: "success" | "failed" | null;
+  lastTestError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PushDiagnostics {
+  vapidConfiguredFromEnv: boolean;
+  ephemeralKeysInUse: boolean;
+  publicKeyPreview: string | null;
+  subject: string;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+}
+
+export interface AdminUserSearchItem {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  penName?: string | null;
+  avatar?: string | null;
+  profilePicture?: string | null;
+  isSuspended?: boolean;
 }
 
 export type MediaAssetStatus = "used" | "unused" | "expiring_soon";

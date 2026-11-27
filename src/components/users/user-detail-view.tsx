@@ -29,6 +29,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import {
   Table,
   TableBody,
   TableCell,
@@ -75,6 +87,76 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   const [actionLoading, setActionLoading] = useState(false);
   const [avatarUpdating, setAvatarUpdating] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    penName: "",
+    email: "",
+    bio: "",
+    genres: "",
+    isEmailVerified: false,
+    isPremium: false,
+    pushNotificationsEnabled: true,
+    loginNotificationsEnabled: true,
+    timeToRead: "",
+    timeToWrite: "",
+    timezone: "",
+  });
+
+  const openEditModal = () => {
+    if (!data?.user) return;
+    const u = data.user as any;
+    setEditForm({
+      firstName: u.firstName ?? "",
+      lastName: u.lastName ?? "",
+      penName: u.penName ?? "",
+      email: u.email ?? "",
+      bio: u.bio ?? "",
+      genres: Array.isArray(u.genres) ? u.genres.join(", ") : "",
+      isEmailVerified: Boolean(u.isEmailVerified),
+      isPremium: Boolean(u.isPremium),
+      pushNotificationsEnabled: u.pushNotificationsEnabled !== false,
+      loginNotificationsEnabled: u.loginNotificationsEnabled !== false,
+      timeToRead: u.timeToRead ?? "",
+      timeToWrite: u.timeToWrite ?? "",
+      timezone: u.timezone ?? "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditSaving(true);
+    try {
+      await adminApi.updateUser(userId, {
+        firstName: editForm.firstName.trim(),
+        lastName: editForm.lastName.trim(),
+        penName: editForm.penName.trim() || undefined,
+        email: editForm.email.trim(),
+        bio: editForm.bio.trim(),
+        genres: editForm.genres
+          .split(",")
+          .map((g) => g.trim())
+          .filter(Boolean),
+        isEmailVerified: editForm.isEmailVerified,
+        isPremium: editForm.isPremium,
+        pushNotificationsEnabled: editForm.pushNotificationsEnabled,
+        loginNotificationsEnabled: editForm.loginNotificationsEnabled,
+        timeToRead: editForm.timeToRead.trim() || null,
+        timeToWrite: editForm.timeToWrite.trim() || null,
+        timezone: editForm.timezone.trim() || null,
+      });
+      toast.success("User updated successfully");
+      setEditOpen(false);
+      await mutate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update user");
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const handleAvatarUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -188,6 +270,10 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         description={user.email}
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={openEditModal}>
+              <Pencil className="mr-2 size-4" />
+              Edit User
+            </Button>
             {user.isSuspended ? (
               <Button
                 variant="outline"
@@ -728,6 +814,172 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         loading={actionLoading}
         onConfirm={runAction}
       />
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit User Details &amp; Settings</DialogTitle>
+            <DialogDescription>
+              Update profile information, notification preferences, and account
+              flags.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>First Name</Label>
+                <Input
+                  value={editForm.firstName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, firstName: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Last Name</Label>
+                <Input
+                  value={editForm.lastName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, lastName: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Pen Name</Label>
+                <Input
+                  value={editForm.penName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, penName: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, email: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Bio</Label>
+              <Textarea
+                rows={3}
+                value={editForm.bio}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, bio: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Genres (comma-separated)</Label>
+              <Input
+                value={editForm.genres}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, genres: e.target.value })
+                }
+                placeholder="Romance, Fantasy, Thriller"
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Time to Read</Label>
+                <Input
+                  value={editForm.timeToRead}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, timeToRead: e.target.value })
+                  }
+                  placeholder="20:00"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Time to Write</Label>
+                <Input
+                  value={editForm.timeToWrite}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, timeToWrite: e.target.value })
+                  }
+                  placeholder="09:00"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Timezone</Label>
+                <Input
+                  value={editForm.timezone}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, timezone: e.target.value })
+                  }
+                  placeholder="Africa/Lagos"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border p-2.5">
+                <Label className="text-xs">Email Verified</Label>
+                <Switch
+                  checked={editForm.isEmailVerified}
+                  onCheckedChange={(v) =>
+                    setEditForm({ ...editForm, isEmailVerified: v })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-2.5">
+                <Label className="text-xs">Premium</Label>
+                <Switch
+                  checked={editForm.isPremium}
+                  onCheckedChange={(v) =>
+                    setEditForm({ ...editForm, isPremium: v })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-2.5">
+                <Label className="text-xs">Push Notifications</Label>
+                <Switch
+                  checked={editForm.pushNotificationsEnabled}
+                  onCheckedChange={(v) =>
+                    setEditForm({ ...editForm, pushNotificationsEnabled: v })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-2.5">
+                <Label className="text-xs">Login Notifications</Label>
+                <Switch
+                  checked={editForm.loginNotificationsEnabled}
+                  onCheckedChange={(v) =>
+                    setEditForm({ ...editForm, loginNotificationsEnabled: v })
+                  }
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving}>
+                {editSaving ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

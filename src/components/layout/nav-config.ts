@@ -108,6 +108,12 @@ export const navItems: NavItem[] = [
     icon: Mail,
     module: "email",
   },
+  {
+    title: "Mail Providers",
+    href: "/email-providers",
+    icon: Mail,
+    module: "email",
+  },
   { title: "FAQs", href: "/faqs", icon: HelpCircle, module: "support" },
   { title: "Support", href: "/support", icon: Headphones, module: "support" },
   {

@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 
 function DeviceIcon({ deviceType }: { deviceType: string }) {
   const lower = deviceType.toLowerCase();
@@ -60,6 +61,11 @@ export default function SecurityPage() {
   const [confirmingTotp, setConfirmingTotp] = useState(false);
   const [updatingMethod, setUpdatingMethod] = useState(false);
 
+  const [emailVerifyStep, setEmailVerifyStep] = useState<"idle" | "sent">("idle");
+  const [emailVerifyCode, setEmailVerifyCode] = useState("");
+  const [sendingEmailVerify, setSendingEmailVerify] = useState(false);
+  const [confirmingEmailVerify, setConfirmingEmailVerify] = useState(false);
+
   const [sessionToRevoke, setSessionToRevoke] =
     useState<AdminSessionItem | null>(null);
   const [confirmRevokeOthers, setConfirmRevokeOthers] = useState(false);
@@ -70,6 +76,25 @@ export default function SecurityPage() {
       setTotpQrDataUrl(null);
     }
   }, [totpSecret]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await adminApi.updateSessionLocation(
+            pos.coords.latitude,
+            pos.coords.longitude,
+          );
+          await mutate();
+        } catch {
+          // ignore silent geolocation update failures
+        }
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }, [mutate]);
 
   const startTotpSetup = async () => {
     setSettingUpTotp(true);
@@ -111,24 +136,57 @@ export default function SecurityPage() {
     }
   };
 
-  const selectMethod = async (
-    method: AdminTwoFactorMethod | "disabled",
+  const toggleMethod = async (
+    method: AdminTwoFactorMethod,
+    enabled: boolean,
   ) => {
     setUpdatingMethod(true);
     try {
-      await adminApi.updateAdminTwoFactorMethod(method);
+      await adminApi.toggleTwoFactorMethod(method, enabled);
       toast.success(
-        method === "disabled"
-          ? "Two-factor authentication disabled"
-          : `2FA method updated to ${method.replace("_", " ")}`,
+        `${method.replace("_", " ").toUpperCase()} ${enabled ? "enabled" : "disabled"}`,
       );
       await mutate();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to update 2FA setting",
+        err instanceof Error ? err.message : "Failed to update 2FA method",
       );
     } finally {
       setUpdatingMethod(false);
+    }
+  };
+
+  const sendEmailVerify = async () => {
+    setSendingEmailVerify(true);
+    try {
+      await adminApi.sendEmail2faVerification();
+      setEmailVerifyStep("sent");
+      toast.success("Verification code sent to your admin email");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send verification code",
+      );
+    } finally {
+      setSendingEmailVerify(false);
+    }
+  };
+
+  const confirmEmailVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailVerifyCode.trim()) return;
+    setConfirmingEmailVerify(true);
+    try {
+      await adminApi.confirmEmail2faVerification(emailVerifyCode.trim());
+      toast.success("Admin email verified for 2FA");
+      setEmailVerifyStep("idle");
+      setEmailVerifyCode("");
+      await mutate();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Invalid verification code",
+      );
+    } finally {
+      setConfirmingEmailVerify(false);
     }
   };
 
@@ -251,11 +309,8 @@ export default function SecurityPage() {
             <CardContent className="space-y-6">
               <div className="grid gap-3 md:grid-cols-3">
                 <div
-                  className={`rounded-lg border p-4 space-y-2 ${
-                    security.twoFactorEnabled &&
-                    security.twoFactorMethod === "totp"
-                      ? "border-primary bg-primary/5"
-                      : ""
+                  className={`rounded-lg border p-4 space-y-3 ${
+                    security.totpEnabled ? "border-primary bg-primary/5" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -263,37 +318,19 @@ export default function SecurityPage() {
                       <Smartphone className="size-4 text-primary" />
                       Authenticator App (TOTP)
                     </span>
-                    {security.twoFactorEnabled &&
-                    security.twoFactorMethod === "totp" ? (
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600">
-                        Active
-                      </Badge>
-                    ) : null}
+                    <Switch
+                      checked={Boolean(security.totpEnabled)}
+                      disabled={updatingMethod || !security.hasTotpConfigured}
+                      onCheckedChange={(checked) =>
+                        void toggleMethod("totp", checked)
+                      }
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Use Google Authenticator, 1Password, or Authy for 6-digit
                     rotating codes.
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {security.hasTotpConfigured ? (
-                      <Button
-                        size="sm"
-                        variant={
-                          security.twoFactorMethod === "totp" &&
-                          security.twoFactorEnabled
-                            ? "secondary"
-                            : "default"
-                        }
-                        onClick={() => selectMethod("totp")}
-                        disabled={
-                          updatingMethod ||
-                          (security.twoFactorEnabled &&
-                            security.twoFactorMethod === "totp")
-                        }
-                      >
-                        Use TOTP
-                      </Button>
-                    ) : null}
                     <Button
                       size="sm"
                       variant="outline"
@@ -311,9 +348,8 @@ export default function SecurityPage() {
                 </div>
 
                 <div
-                  className={`rounded-lg border p-4 space-y-2 ${
-                    security.twoFactorEnabled &&
-                    security.twoFactorMethod === "email_otp"
+                  className={`rounded-lg border p-4 space-y-3 ${
+                    security.emailOtpEnabled
                       ? "border-primary bg-primary/5"
                       : ""
                   }`}
@@ -323,40 +359,30 @@ export default function SecurityPage() {
                       <KeyRound className="size-4 text-primary" />
                       Email Verification Code
                     </span>
-                    {security.twoFactorEnabled &&
-                    security.twoFactorMethod === "email_otp" ? (
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600">
-                        Active
-                      </Badge>
-                    ) : null}
+                    <Switch
+                      checked={Boolean(security.emailOtpEnabled)}
+                      disabled={
+                        updatingMethod || !security.twoFactorEmailVerified
+                      }
+                      onCheckedChange={(checked) =>
+                        void toggleMethod("email_otp", checked)
+                      }
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Receive a one-time 6-digit code in your admin email after
                     entering your password.
                   </p>
-                  <Button
-                    size="sm"
-                    variant={
-                      security.twoFactorEnabled &&
-                      security.twoFactorMethod === "email_otp"
-                        ? "secondary"
-                        : "default"
-                    }
-                    onClick={() => selectMethod("email_otp")}
-                    disabled={
-                      updatingMethod ||
-                      (security.twoFactorEnabled &&
-                        security.twoFactorMethod === "email_otp")
-                    }
-                  >
-                    Use Email Code
-                  </Button>
+                  {!security.twoFactorEmailVerified ? (
+                    <Badge variant="outline" className="text-[11px]">
+                      Verify email below to enable
+                    </Badge>
+                  ) : null}
                 </div>
 
                 <div
-                  className={`rounded-lg border p-4 space-y-2 ${
-                    security.twoFactorEnabled &&
-                    security.twoFactorMethod === "email_link"
+                  className={`rounded-lg border p-4 space-y-3 ${
+                    security.emailLinkEnabled
                       ? "border-primary bg-primary/5"
                       : ""
                   }`}
@@ -366,36 +392,82 @@ export default function SecurityPage() {
                       <Mail className="size-4 text-primary" />
                       Email Sign-In Link
                     </span>
-                    {security.twoFactorEnabled &&
-                    security.twoFactorMethod === "email_link" ? (
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600">
-                        Active
-                      </Badge>
-                    ) : null}
+                    <Switch
+                      checked={Boolean(security.emailLinkEnabled)}
+                      disabled={
+                        updatingMethod || !security.twoFactorEmailVerified
+                      }
+                      onCheckedChange={(checked) =>
+                        void toggleMethod("email_link", checked)
+                      }
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Receive a one-click confirmation link in your email after
                     entering your password.
                   </p>
-                  <Button
-                    size="sm"
-                    variant={
-                      security.twoFactorEnabled &&
-                      security.twoFactorMethod === "email_link"
-                        ? "secondary"
-                        : "default"
-                    }
-                    onClick={() => selectMethod("email_link")}
-                    disabled={
-                      updatingMethod ||
-                      (security.twoFactorEnabled &&
-                        security.twoFactorMethod === "email_link")
-                    }
-                  >
-                    Use Email Link
-                  </Button>
+                  {!security.twoFactorEmailVerified ? (
+                    <Badge variant="outline" className="text-[11px]">
+                      Verify email below to enable
+                    </Badge>
+                  ) : null}
                 </div>
               </div>
+
+              {!security.twoFactorEmailVerified ? (
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">
+                        Verify Admin Email for Email 2FA
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Confirm you can receive codes at your admin email before
+                        enabling Email OTP or Email Sign-In Link.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={sendEmailVerify}
+                      disabled={sendingEmailVerify}
+                    >
+                      {sendingEmailVerify ? (
+                        <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                      ) : null}
+                      {emailVerifyStep === "sent"
+                        ? "Resend Code"
+                        : "Send Verification Code"}
+                    </Button>
+                  </div>
+                  {emailVerifyStep === "sent" ? (
+                    <form
+                      onSubmit={confirmEmailVerify}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <Input
+                        className="max-w-[180px]"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="6-digit OTP"
+                        value={emailVerifyCode}
+                        onChange={(e) => setEmailVerifyCode(e.target.value)}
+                        required
+                      />
+                      <Button
+                        size="sm"
+                        type="submit"
+                        disabled={confirmingEmailVerify}
+                      >
+                        {confirmingEmailVerify ? (
+                          <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                        ) : null}
+                        Confirm Email
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
+              ) : null}
 
               {totpSecret && totpQrDataUrl ? (
                 <form
@@ -452,19 +524,6 @@ export default function SecurityPage() {
                     </div>
                   </div>
                 </form>
-              ) : null}
-
-              {security.twoFactorEnabled ? (
-                <div className="flex justify-end border-t pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => selectMethod("disabled")}
-                    disabled={updatingMethod}
-                  >
-                    Disable 2FA
-                  </Button>
-                </div>
               ) : null}
             </CardContent>
           </Card>
@@ -527,6 +586,16 @@ export default function SecurityPage() {
                             <MapPin className="size-3" />
                             {session.location || "Unknown location"}
                             {session.ipAddress ? ` (${session.ipAddress})` : ""}
+                            {session.googleMapsUrl ? (
+                              <a
+                                href={session.googleMapsUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="ml-1 text-primary underline hover:no-underline"
+                              >
+                                Map
+                              </a>
+                            ) : null}
                           </span>
                           <span>
                             Signed in:{" "}

@@ -15,7 +15,12 @@ import type {
   AdminMediaLibraryResponse,
   AdminSecurityOverview,
   AdminStoryAudioStudio,
+  AdminUserSearchItem,
+  MailProviderItem,
+  MailProviderPreset,
+  MailProviderType,
   MediaAssetStatus,
+  PushDiagnostics,
   EmailDeliveryLog,
   EmailTemplate,
   EmailTemplateSummary,
@@ -879,4 +884,149 @@ export const adminApi = {
       deletedCount: number;
       failedCount: number;
     }>("admin/media/cleanup", { method: "POST" }),
+
+  sendEmail2faVerification: () =>
+    apiRequest<{ message: string }>("admin/security/2fa/email/send-verification", {
+      method: "POST",
+    }),
+
+  confirmEmail2faVerification: (code: string) =>
+    apiRequest<{ message: string; twoFactorEmailVerified: boolean }>(
+      "admin/security/2fa/email/confirm",
+      { method: "POST", body: { code } },
+    ),
+
+  toggleTwoFactorMethod: (
+    method: "totp" | "email_otp" | "email_link",
+    enabled: boolean,
+  ) =>
+    apiRequest<{
+      message: string;
+      totpEnabled: boolean;
+      emailOtpEnabled: boolean;
+      emailLinkEnabled: boolean;
+      twoFactorEnabled: boolean;
+      twoFactorMethod: "totp" | "email_otp" | "email_link" | null;
+    }>("admin/security/2fa/toggle", {
+      method: "POST",
+      body: { method, enabled },
+    }),
+
+  updateSessionLocation: (
+    latitude: number,
+    longitude: number,
+    location?: string,
+  ) =>
+    apiRequest<{ updated: boolean; latitude?: number; longitude?: number; location?: string }>(
+      "admin/security/sessions/location",
+      { method: "POST", body: { latitude, longitude, location } },
+    ),
+
+  searchUsers: (q: string, limit = 20) =>
+    apiRequest<{ message: string; users: AdminUserSearchItem[] }>(
+      `admin/users/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    ),
+
+  updateUser: (
+    userId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      penName?: string;
+      email?: string;
+      bio?: string;
+      genres?: string[];
+      isEmailVerified?: boolean;
+      isPremium?: boolean;
+      pushNotificationsEnabled?: boolean;
+      loginNotificationsEnabled?: boolean;
+      timeToRead?: string | null;
+      timeToWrite?: string | null;
+      readingReminder?: string | null;
+      writingReminder?: string | null;
+      timezone?: string | null;
+    },
+  ) =>
+    apiRequest<{ message: string; user: AppUser }>(`admin/users/${userId}`, {
+      method: "PATCH",
+      body: data,
+    }),
+
+  getPushStatus: () =>
+    apiRequest<{ message: string; push: PushDiagnostics }>(
+      "admin/push/status",
+    ),
+
+  sendTestPush: (userId: string) =>
+    apiRequest<{
+      sent: number;
+      failed: number;
+      errors?: string[];
+      message: string;
+    }>("admin/push/test", { method: "POST", body: { userId } }),
+
+  getMailProviders: () =>
+    apiRequest<{
+      message: string;
+      presets: Record<MailProviderType, MailProviderPreset>;
+      providers: MailProviderItem[];
+    }>("admin/mail-providers"),
+
+  createMailProvider: (body: {
+    name: string;
+    providerType: MailProviderType;
+    isEnabled?: boolean;
+    isDefault?: boolean;
+    isFallback?: boolean;
+    fromEmail?: string;
+    fromName?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecure?: boolean;
+    smtpUser?: string;
+    smtpPassword?: string;
+    apiKey?: string;
+  }) =>
+    apiRequest<{ message: string; provider: MailProviderItem }>(
+      "admin/mail-providers",
+      { method: "POST", body },
+    ),
+
+  updateMailProvider: (
+    id: string,
+    body: Partial<{
+      name: string;
+      isEnabled: boolean;
+      isDefault: boolean;
+      isFallback: boolean;
+      fromEmail: string;
+      fromName: string;
+      smtpHost: string;
+      smtpPort: number;
+      smtpSecure: boolean;
+      smtpUser: string;
+      smtpPassword: string;
+      apiKey: string;
+    }>,
+  ) =>
+    apiRequest<{ message: string; provider: MailProviderItem }>(
+      `admin/mail-providers/${id}`,
+      { method: "PATCH", body },
+    ),
+
+  deleteMailProvider: (id: string) =>
+    apiRequest<{ message: string }>(`admin/mail-providers/${id}`, {
+      method: "DELETE",
+    }),
+
+  testMailProvider: (id: string, toEmail: string) =>
+    apiRequest<{
+      ok: boolean;
+      providerId: string;
+      testedAt: string;
+      message: string;
+    }>(`admin/mail-providers/${id}/test`, {
+      method: "POST",
+      body: { toEmail },
+    }),
 };
