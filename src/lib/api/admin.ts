@@ -953,9 +953,11 @@ export const adminApi = {
     }),
 
   getPushStatus: () =>
-    apiRequest<{ message: string; push: PushDiagnostics }>(
-      "admin/push/status",
-    ),
+    apiRequest<{
+      message: string;
+      diagnostics?: PushDiagnostics;
+      push?: PushDiagnostics;
+    }>("admin/push/status"),
 
   sendTestPush: (userId: string) =>
     apiRequest<{

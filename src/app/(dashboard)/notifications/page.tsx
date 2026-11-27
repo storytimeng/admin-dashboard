@@ -173,7 +173,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const push = pushData?.push;
+  const push = pushData?.diagnostics ?? pushData?.push;
 
   return (
     <div className="space-y-6">
