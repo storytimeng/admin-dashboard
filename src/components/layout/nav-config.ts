@@ -23,6 +23,7 @@ import {
   BarChart3,
   ShieldCheck,
   Images,
+  DatabaseBackup,
 } from "lucide-react";
 
 export type NavModule =
@@ -64,6 +65,12 @@ export const navItems: NavItem[] = [
     title: "Popularity",
     href: "/popularity",
     icon: TrendingUp,
+    module: "system",
+  },
+  {
+    title: "Database Backups",
+    href: "/backups",
+    icon: DatabaseBackup,
     module: "system",
   },
   { title: "Episodes", href: "/episodes", icon: Layers, module: "moderation" },

@@ -139,7 +139,17 @@ export interface AdminUserSearchItem {
   isSuspended?: boolean;
 }
 
-export type MediaAssetStatus = "used" | "unused" | "expiring_soon";
+export type MediaAssetStatus = "used" | "unused" | "expiring_soon" | "protected";
+
+export interface MediaFolderItem {
+  id: string | null;
+  path: string;
+  autoCleanup: boolean;
+  description: string | null;
+  assetCount: number;
+  totalBytes: number;
+  unusedCount?: number;
+}
 
 export interface MediaUsageRef {
   type:
@@ -171,6 +181,8 @@ export interface AdminMediaItem {
   extendedUntil: string | null;
   daysLeft: number | null;
   isUsed: boolean;
+  isProtected?: boolean;
+  autoCleanup?: boolean;
   status: MediaAssetStatus;
   usages: MediaUsageRef[];
 }
@@ -181,10 +193,12 @@ export interface AdminMediaLibraryResponse {
     totalBytes: number;
     usedCount: number;
     unusedCount: number;
+    protectedCount?: number;
     expiringSoonCount: number;
     reclaimableBytes: number;
   };
   folders: string[];
+  folderMeta?: MediaFolderItem[];
   pagination: {
     page: number;
     limit: number;
@@ -1096,6 +1110,28 @@ export interface StoryDeletionRequestItem {
     firstName?: string | null;
     lastName?: string | null;
   } | null;
+}
+
+export interface DatabaseBackupItem {
+  id: string;
+  status: "running" | "success" | "failed";
+  triggeredBy: string;
+  targetHost: string | null;
+  tablesBackedUp: number;
+  rowsBackedUp: number;
+  durationMs: number | null;
+  errorMessage: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface DatabaseBackupStatusResponse {
+  configured: boolean;
+  targetHost: string | null;
+  schedule: string;
+  isRunning: boolean;
+  lastBackup: DatabaseBackupItem | null;
+  history: DatabaseBackupItem[];
 }
 
 export interface PopularitySettings {

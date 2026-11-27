@@ -20,6 +20,9 @@ import type {
   MailProviderPreset,
   MailProviderType,
   MediaAssetStatus,
+  MediaFolderItem,
+  DatabaseBackupStatusResponse,
+  DatabaseBackupItem,
   PushDiagnostics,
   EmailDeliveryLog,
   EmailTemplate,
@@ -884,6 +887,68 @@ export const adminApi = {
       deletedCount: number;
       failedCount: number;
     }>("admin/media/cleanup", { method: "POST" }),
+
+  getMediaFolders: () =>
+    apiRequest<{ message: string; folders: MediaFolderItem[] }>(
+      "admin/media/folders",
+    ),
+
+  createMediaFolder: (body: {
+    path: string;
+    autoCleanup?: boolean;
+    description?: string;
+  }) =>
+    apiRequest<{ message: string; folder: MediaFolderItem }>(
+      "admin/media/folders",
+      { method: "POST", body },
+    ),
+
+  updateMediaFolderPolicy: (body: {
+    path: string;
+    autoCleanup: boolean;
+    description?: string;
+  }) =>
+    apiRequest<{ message: string; folder: MediaFolderItem }>(
+      "admin/media/folders/policy",
+      { method: "PATCH", body },
+    ),
+
+  deleteMediaFolder: (path: string) =>
+    apiRequest<{ deleted: boolean; path: string }>(
+      `admin/media/folders?path=${encodeURIComponent(path)}`,
+      { method: "DELETE" },
+    ),
+
+  moveOrRenameMedia: (
+    id: string,
+    body: { targetFolder?: string; newName?: string },
+  ) =>
+    apiRequest<{ message: string; asset: unknown }>(`admin/media/${id}/move`, {
+      method: "PATCH",
+      body,
+    }),
+
+  bulkMoveMedia: (ids: string[], targetFolder: string) =>
+    apiRequest<{
+      message: string;
+      movedCount: number;
+      failedCount: number;
+      targetFolder: string;
+    }>("admin/media/bulk-move", {
+      method: "POST",
+      body: { ids, targetFolder },
+    }),
+
+  getBackups: (limit = 20) =>
+    apiRequest<{ message: string } & DatabaseBackupStatusResponse>(
+      `admin/backups?limit=${limit}`,
+    ),
+
+  runManualBackup: () =>
+    apiRequest<{ message: string; backup: DatabaseBackupItem }>(
+      "admin/backups/run",
+      { method: "POST" },
+    ),
 
   sendEmail2faVerification: () =>
     apiRequest<{ message: string }>("admin/security/2fa/email/send-verification", {
