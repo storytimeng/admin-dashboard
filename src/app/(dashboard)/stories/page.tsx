@@ -133,10 +133,10 @@ function StoriesPageContent() {
         description="Review, moderate, and manage published and draft stories."
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-3">
+        <div className="flex flex-wrap flex-1 items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="top-1/2 left-3 absolute size-4 text-muted-foreground -translate-y-1/2" />
             <Input
               placeholder="Search title, description, or author…"
               className="pl-9"
@@ -177,14 +177,14 @@ function StoriesPageContent() {
           </Select>
         </div>
         {!isLoading && total > 0 ? (
-          <p className="text-sm text-muted-foreground whitespace-nowrap">
+          <p className="text-muted-foreground text-sm whitespace-nowrap">
             {total} stories total
           </p>
         ) : null}
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border bg-card overflow-x-auto">
+        <div className="bg-card border rounded-xl overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -203,7 +203,7 @@ function StoriesPageContent() {
                   (_, i) => (
                     <TableRow key={i}>
                       <TableCell colSpan={7}>
-                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="w-full h-8" />
                       </TableCell>
                     </TableRow>
                   ),
@@ -212,7 +212,7 @@ function StoriesPageContent() {
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="text-center text-destructive py-8"
+                    className="py-8 text-destructive text-center"
                   >
                     Failed to load stories
                   </TableCell>
@@ -221,7 +221,7 @@ function StoriesPageContent() {
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="text-center text-muted-foreground py-8"
+                    className="py-8 text-muted-foreground text-center"
                   >
                     {search.trim()
                       ? "No matches on this page"
@@ -231,13 +231,13 @@ function StoriesPageContent() {
               ) : (
                 stories.map((story, index) => (
                   <TableRow key={story.id}>
-                    <TableCell className="text-center text-sm tabular-nums text-muted-foreground">
+                    <TableCell className="tabular-nums text-muted-foreground text-sm text-center">
                       {(page - 1) * pageSize + index + 1}
                     </TableCell>
-                    <TableCell className="font-medium max-w-[220px]">
+                    <TableCell className="max-w-[220px] font-medium">
                       <Link
                         href={`/stories/${story.id}`}
-                        className="truncate hover:text-primary hover:underline underline-offset-2"
+                        className="hover:text-primary hover:underline underline-offset-2 truncate"
                       >
                         {story.title}
                       </Link>
@@ -264,11 +264,11 @@ function StoriesPageContent() {
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-sm">
                       {story.likeCount ?? 0} likes · {story.commentCount ?? 0}{" "}
                       comments
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-sm">
                       {story.updatedAt
                         ? formatDistanceToNow(new Date(story.updatedAt), {
                             addSuffix: true,
@@ -277,7 +277,7 @@ function StoriesPageContent() {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent outline-none">
+                        <DropdownMenuTrigger className="inline-flex justify-center items-center hover:bg-accent rounded-md outline-none size-8">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
