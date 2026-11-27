@@ -6,6 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -48,16 +49,18 @@ export function AdminHeader() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium">
-                    {admin?.firstName} {admin?.lastName}
-                  </span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {admin?.email}
-                  </span>
-                </div>
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">
+                      {admin?.firstName} {admin?.lastName}
+                    </span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {admin?.email}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/security")}>
                 <ShieldCheck className="mr-2 size-4" />
