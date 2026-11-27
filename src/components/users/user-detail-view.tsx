@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/table";
 import { adminApi } from "@/lib/api/admin";
 import { moderationActionMessage } from "@/lib/moderation-action-message";
+import { MediaPickerDialog } from "@/components/media/media-picker-dialog";
 
 function StatCard({
   label,
@@ -86,6 +87,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [avatarUpdating, setAvatarUpdating] = useState(false);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -347,6 +349,14 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
               <ImagePlus className="mr-1.5 size-3.5" />
             )}
             {user.profilePicture || user.avatar ? "Change photo" : "Upload photo"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAvatarPickerOpen(true)}
+            disabled={avatarUpdating}
+          >
+            Choose from Library
           </Button>
           {user.profilePicture || user.avatar ? (
             <Button
@@ -980,6 +990,27 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <MediaPickerDialog
+        open={avatarPickerOpen}
+        onOpenChange={setAvatarPickerOpen}
+        defaultFolder="users/avatars"
+        title="Choose Profile Photo from Media Library"
+        onSelect={async (item) => {
+          setAvatarUpdating(true);
+          try {
+            await adminApi.updateUserAvatar(userId, item.url);
+            toast.success("User profile photo updated from Media Library");
+            await mutate();
+          } catch (err) {
+            toast.error(
+              err instanceof Error ? err.message : "Failed to update photo",
+            );
+          } finally {
+            setAvatarUpdating(false);
+          }
+        }}
+      />
     </div>
   );
 }

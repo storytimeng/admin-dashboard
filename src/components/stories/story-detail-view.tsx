@@ -33,6 +33,7 @@ import type {
   StoryCommentDetail,
 } from "@/types/admin";
 import { StoryEditDialog } from "@/components/stories/story-edit-dialog";
+import { MediaPickerDialog } from "@/components/media/media-picker-dialog";
 import { ChapterEditDialog } from "@/components/content/chapter-edit-dialog";
 import { EpisodeEditDialog } from "@/components/content/episode-edit-dialog";
 import { StoryAudioStudio } from "@/components/narration/story-audio-studio";
@@ -108,6 +109,7 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
   >(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [coverUpdating, setCoverUpdating] = useState(false);
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleQuickCoverUpload = async (
@@ -324,6 +326,15 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
                 <ImagePlus className="mr-1.5 size-3.5" />
               )}
               {story.imageUrl ? "Change" : "Upload"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCoverPickerOpen(true)}
+              disabled={coverUpdating}
+              title="Choose from Media Library"
+            >
+              Library
             </Button>
             {story.imageUrl ? (
               <Button
@@ -604,6 +615,27 @@ export function StoryDetailView({ storyId }: StoryDetailViewProps) {
         destructive={confirmAction === "delete" || confirmAction === "suspend"}
         loading={actionLoading}
         onConfirm={runAction}
+      />
+
+      <MediaPickerDialog
+        open={coverPickerOpen}
+        onOpenChange={setCoverPickerOpen}
+        defaultFolder="story-covers"
+        title="Choose Story Cover from Media Library"
+        onSelect={async (item) => {
+          setCoverUpdating(true);
+          try {
+            await adminApi.updateStory(storyId, { imageUrl: item.url });
+            toast.success("Story cover updated from Media Library");
+            await mutate();
+          } catch (err) {
+            toast.error(
+              err instanceof Error ? err.message : "Failed to update cover",
+            );
+          } finally {
+            setCoverUpdating(false);
+          }
+        }}
       />
     </div>
   );

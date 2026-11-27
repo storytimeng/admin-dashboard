@@ -19,8 +19,10 @@ import {
   Link2,
   Unlink,
   Code,
+  Images,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MediaPickerDialog } from "@/components/media/media-picker-dialog";
 
 interface RichTextEditorProps {
   value: string;
@@ -73,6 +75,7 @@ export function RichTextEditor({
   const lastEmittedHtmlRef = useRef(value);
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceValue, setSourceValue] = useState(value);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -264,6 +267,12 @@ export function RichTextEditor({
             >
               <Unlink className="size-4" />
             </MenuButton>
+            <MenuButton
+              onClick={() => setMediaPickerOpen(true)}
+              title="Insert image from Media Library"
+            >
+              <Images className="size-4" />
+            </MenuButton>
 
             <div className="mx-1 h-5 w-px bg-border" />
 
@@ -314,6 +323,18 @@ export function RichTextEditor({
       ) : (
         <EditorContent editor={editor} />
       )}
+      <MediaPickerDialog
+        open={mediaPickerOpen}
+        onOpenChange={setMediaPickerOpen}
+        title="Insert Image from Media Library"
+        onSelect={(item) => {
+          editor
+            .chain()
+            .focus()
+            .insertContent(`<img src="${item.url}" alt="${item.publicId}" />`)
+            .run();
+        }}
+      />
     </div>
   );
 }

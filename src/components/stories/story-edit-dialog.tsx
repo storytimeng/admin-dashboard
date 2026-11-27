@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/forms/rich-text-editor";
+import { MediaPickerDialog } from "@/components/media/media-picker-dialog";
 import { adminApi } from "@/lib/api/admin";
 import type { AdminStory } from "@/types/admin";
 
@@ -49,6 +50,7 @@ export function StoryEditDialog({
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -202,6 +204,13 @@ export function StoryEditDialog({
                   )}
                   Upload
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMediaPickerOpen(true)}
+                >
+                  Library
+                </Button>
               </div>
               {form.imageUrl ? (
                 <div className="mt-2 flex items-end gap-3">
@@ -249,6 +258,15 @@ export function StoryEditDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <MediaPickerDialog
+        open={mediaPickerOpen}
+        onOpenChange={setMediaPickerOpen}
+        defaultFolder="story-covers"
+        title="Choose Story Cover from Media Library"
+        onSelect={(item) => {
+          setForm((f) => ({ ...f, imageUrl: item.url }));
+        }}
+      />
     </Dialog>
   );
 }
